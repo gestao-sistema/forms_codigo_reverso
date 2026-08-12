@@ -4,7 +4,6 @@ import {
   Pie,
   Cell,
   Tooltip,
-  Legend,
   ResponsiveContainer,
 } from 'recharts';
 import { type EmpresaDatum, COR_EMPRESA } from '../../services/analytics';
@@ -33,8 +32,7 @@ export default function ChartEmpresa({ data }: ChartEmpresaProps) {
           animationEasing="ease-out"
           animationBegin={0}
           // Rótulo com percentual em cada fatia (usa `percent` nativo do Recharts)
-          label={((props: { name?: string; percent?: number }) =>
-            `${props.name}: ${Math.round((props.percent ?? 0) * 100)}%`) as never}
+          label={false}
           labelLine={false}
           style={{ fontSize: 12, fontWeight: 500 }}
         >
@@ -43,21 +41,16 @@ export default function ChartEmpresa({ data }: ChartEmpresaProps) {
           ))}
         </Pie>
         <Tooltip
-          formatter={(value) => [`${value} solicitações`, '']}
+          formatter={(value: number, name: string, props: any) => {
+            const percent = props.payload.percent || 0;
+            return [`${Math.round(percent * 100)}% | ${value}`, name];
+          }}
           contentStyle={{
             borderRadius: 10,
             border: '1px solid #E2E8F0',
             boxShadow: '0 8px 20px rgba(0,0,0,0.08)',
             fontSize: 13,
           }}
-        />
-        <Legend
-          verticalAlign="bottom"
-          height={24}
-          iconType="circle"
-          formatter={(value) => (
-            <span style={{ color: '#475569', fontSize: 13 }}>{value}</span>
-          )}
         />
       </PieChart>
     </ResponsiveContainer>

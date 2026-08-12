@@ -22,8 +22,8 @@ export const formSchema = z
     /** Nome do responsável interno */
     solicitante: z
       .string({ required_error: 'Informe o nome do solicitante.' })
-      .min(2, 'Nome deve ter ao menos 2 caracteres.')
-      .max(100, 'Nome muito longo.'),
+      .transform(val => val.replace(/<[^>]*>?/gm, '').trim())
+      .pipe(z.string().min(2, 'Nome deve ter ao menos 2 caracteres.').max(100, 'Nome muito longo.')),
 
     /** Setor interno */
     setor: z.enum(SETORES, {
@@ -42,14 +42,14 @@ export const formSchema = z
     /** Nome completo da cliente */
     nome_cliente: z
       .string({ required_error: 'Informe o nome da cliente.' })
-      .min(2, 'Nome deve ter ao menos 2 caracteres.')
-      .max(150, 'Nome muito longo.'),
+      .transform(val => val.replace(/<[^>]*>?/gm, '').trim())
+      .pipe(z.string().min(2, 'Nome deve ter ao menos 2 caracteres.').max(150, 'Nome muito longo.')),
 
     /** Endereço de postagem */
     endereco_postagem: z
       .string({ required_error: 'Informe o endereço de postagem.' })
-      .min(5, 'Endereço deve ter ao menos 5 caracteres.')
-      .max(300, 'Endereço muito longo.'),
+      .transform(val => val.replace(/<[^>]*>?/gm, '').trim())
+      .pipe(z.string().min(5, 'Endereço deve ter ao menos 5 caracteres.').max(300, 'Endereço muito longo.')),
 
     /** Motivo principal do reverso */
     motivo: z.enum(MOTIVOS, {
@@ -62,7 +62,8 @@ export const formSchema = z
      */
     justificativa_outros: z
       .string()
-      .max(500, 'Justificativa muito longa (máximo 500 caracteres).')
+      .transform(val => val.replace(/<[^>]*>?/gm, '').trim())
+      .pipe(z.string().max(500, 'Justificativa muito longa (máximo 500 caracteres).'))
       .optional()
       .or(z.literal('')),
 

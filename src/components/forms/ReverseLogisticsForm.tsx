@@ -166,24 +166,24 @@ export default function ReverseLogisticsForm({ empresa }: ReverseLogisticsFormPr
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className={`w-full h-full`}>
+    <div className={`w-full h-full sm:p-4`}>
       <div className="max-w-2xl mx-auto">
 
         {/* Card do formulário */}
-        <div className={`bg-white rounded-2xl shadow-sm border ${tema.borderColor} overflow-hidden`}>
+        <div className={`bg-white sm:rounded-2xl shadow-sm border-0 sm:border ${tema.borderColor} overflow-hidden`}>
 
           {/* ── Header com identidade visual da empresa ── */}
-          <div className={`${tema.headerBg} px-8 py-6 flex items-center gap-5`}>
+          <div className={`${tema.headerBg} px-5 sm:px-8 py-6 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-5`}>
             <img
               src={tema.logo}
               alt={tema.logoAlt}
-              className="h-14 w-auto rounded-lg object-contain"
+              className="h-12 sm:h-14 w-auto rounded-lg object-contain"
             />
             <div>
-              <h1 className={`text-xl font-semibold ${tema.headerText} leading-tight`}>
+              <h1 className={`text-lg sm:text-xl font-semibold ${tema.headerText} leading-tight`}>
                 Solicitação de Logística Reversa
               </h1>
-              <p className={`text-sm mt-0.5 ${tema.headerText} opacity-75`}>
+              <p className={`text-xs sm:text-sm mt-1 sm:mt-0.5 ${tema.headerText} opacity-75`}>
                 Preencha todos os campos obrigatórios
               </p>
             </div>
@@ -194,7 +194,7 @@ export default function ReverseLogisticsForm({ empresa }: ReverseLogisticsFormPr
             onSubmit={handleSubmit(onSubmit)}
             noValidate
             aria-label={`Formulário de logística reversa ${empresa}`}
-            className="px-8 py-8 space-y-6"
+            className="px-5 sm:px-8 py-6 sm:py-8 space-y-6"
           >
 
             {/* Data da solicitação */}
