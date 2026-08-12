@@ -1,0 +1,88 @@
+- generic [ref=e1]:
+  - generic [ref=e30]:
+    - complementary "Navegação principal" [ref=e31]:
+      - generic [ref=e32]: Reverso
+      - navigation [ref=e39]:
+        - link "Dashboard" [ref=e40] [cursor=pointer]:
+          - /url: /admin/dashboard
+        - link "Lista" [ref=e43] [cursor=pointer]:
+          - /url: /admin/lista
+        - link "Usuários" [ref=e47] [cursor=pointer]:
+          - /url: /admin/usuarios
+      - generic [ref=e53]:
+        - generic [ref=e54]:
+          - paragraph [ref=e55]: Administrador
+          - paragraph [ref=e56]: Administrador
+        - button "Sair" [ref=e57] [cursor=pointer]
+    - main [ref=e62]:
+      - generic [ref=e437]:
+        - generic [ref=e438]:
+          - generic [ref=e439]:
+            - heading "Usuários" [level=1] [ref=e440]
+            - paragraph [ref=e441]: Gerencie logins e perfis de acesso.
+          - button "Novo usuário" [active] [ref=e442] [cursor=pointer]
+        - table [ref=e446]:
+          - rowgroup [ref=e447]:
+            - row [ref=e448]:
+              - columnheader "Nome" [ref=e449]
+              - columnheader "Login" [ref=e450]
+              - columnheader "Perfil" [ref=e451]
+              - columnheader "Ações" [ref=e452]
+          - rowgroup [ref=e453]:
+            - row [ref=e454]:
+              - cell "Administrador" [ref=e455]
+              - cell "admin" [ref=e456]
+              - cell "Administrador" [ref=e457]
+              - cell [ref=e459]:
+                - generic [ref=e460]:
+                  - button "Editar Administrador" [ref=e461] [cursor=pointer]
+                  - button "Remover Administrador" [disabled] [ref=e465]
+            - row [ref=e469]:
+              - cell "Operador Alinare" [ref=e470]
+              - cell "alinare" [ref=e471]
+              - cell "Alinare" [ref=e472]
+              - cell [ref=e474]:
+                - generic [ref=e475]:
+                  - button "Editar Operador Alinare" [ref=e476] [cursor=pointer]
+                  - button "Remover Operador Alinare" [ref=e480] [cursor=pointer]
+            - row [ref=e484]:
+              - cell "Operador Novitah" [ref=e485]
+              - cell "novitah" [ref=e486]
+              - cell "Novitah" [ref=e487]
+              - cell [ref=e489]:
+                - generic [ref=e490]:
+                  - button "Editar Operador Novitah" [ref=e491] [cursor=pointer]
+                  - button "Remover Operador Novitah" [ref=e495] [cursor=pointer]
+            - row [ref=e499]:
+              - cell "Expedição" [ref=e500]
+              - cell "expedicao" [ref=e501]
+              - cell "Expedição" [ref=e502]
+              - cell [ref=e504]:
+                - generic [ref=e505]:
+                  - button "Editar Expedição" [ref=e506] [cursor=pointer]
+                  - button "Remover Expedição" [ref=e510] [cursor=pointer]
+        - generic [ref=e515]:
+          - generic [ref=e516]:
+            - heading "Novo usuário" [level=2] [ref=e517]
+            - button "Fechar" [ref=e518] [cursor=pointer]
+          - generic [ref=e522]:
+            - generic [ref=e523]:
+              - generic [ref=e524]: Nome
+              - textbox "Nome" [ref=e525]
+            - generic [ref=e526]:
+              - generic [ref=e527]: Login
+              - textbox "Login" [ref=e528]
+            - generic [ref=e529]:
+              - generic [ref=e530]: Senha
+              - textbox "Senha" [ref=e531]
+            - generic [ref=e532]:
+              - generic [ref=e533]: Perfil
+              - combobox "Perfil" [ref=e534]:
+                - option "Administrador"
+                - option "Alinare" [selected]
+                - option "Novitah"
+                - option "Expedição"
+            - generic [ref=e535]:
+              - button "Cancelar" [ref=e536] [cursor=pointer]
+              - button "Salvar" [ref=e537] [cursor=pointer]
+  - generic [ref=e436]: Joice Mendes

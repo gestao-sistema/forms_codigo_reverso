@@ -1,0 +1,63 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - status [ref=e751]: Bem-vindo, Operador Alinare.
+    - generic [ref=e753]:
+      - generic [ref=e754]:
+        - generic [ref=e755]:
+          - img "Logotipo Alinare" [ref=e756]
+          - generic [ref=e757]:
+            - heading "Solicitação de Logística Reversa" [level=1] [ref=e758]
+            - paragraph [ref=e759]: Preencha todos os campos obrigatórios
+        - form "Formulário de logística reversa Alinare" [ref=e760]:
+          - generic [ref=e761]:
+            - generic [ref=e762]: Data da Solicitação *
+            - textbox "Data da Solicitação *" [ref=e767]:
+              - /placeholder: dd/mm/aaaa
+          - generic [ref=e768]:
+            - generic [ref=e769]:
+              - generic [ref=e770]: Solicitante *
+              - textbox "Solicitante *" [ref=e771]:
+                - /placeholder: Nome do responsável
+            - generic [ref=e772]:
+              - generic [ref=e773]: Setor *
+              - combobox "Setor *" [ref=e774] [cursor=pointer]:
+                - option "Selecione o setor" [selected]
+                - option "Comercial Alinare"
+                - option "Financeiro"
+                - option "Assistência Técnica"
+          - generic [ref=e775]:
+            - generic [ref=e776]:
+              - generic [ref=e777]: Código da Cliente *
+              - spinbutton "Código da Cliente *" [ref=e778]
+            - generic [ref=e779]:
+              - generic [ref=e780]: Nome da Cliente *
+              - textbox "Nome da Cliente *" [ref=e781]:
+                - /placeholder: Nome completo
+          - generic [ref=e782]:
+            - generic [ref=e783]: Endereço de Postagem *
+            - textbox "Endereço de Postagem *" [ref=e784]:
+              - /placeholder: Rua, número, bairro, cidade/UF
+          - generic [ref=e785]:
+            - generic [ref=e786]: Motivo *
+            - combobox "Motivo *" [ref=e787] [cursor=pointer]:
+              - option "Selecione o motivo" [selected]
+              - option "Peça com defeito"
+              - option "Mercadoria errada"
+              - option "Endereço incorreto"
+              - option "Baixa qualidade no conserto"
+              - option "Outros"
+          - generic:
+            - generic: Justifique a opção "Outros"
+            - textbox [disabled]:
+              - /placeholder: Descreva o motivo detalhadamente...
+          - generic [ref=e788]:
+            - generic [ref=e789]: Autorização do Reverso *
+            - combobox "Autorização do Reverso *" [ref=e790] [cursor=pointer]:
+              - option "Selecione o responsável" [selected]
+              - option "Joice Mendes"
+              - option "Viviane Ulian"
+              - option "Sheila Cristina"
+          - separator [ref=e791]
+          - button "Enviar Solicitação" [ref=e792] [cursor=pointer]
+      - paragraph [ref=e796]: Campos marcados com * são obrigatórios.
+  - generic [ref=e436]: Joice Mendes

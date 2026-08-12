@@ -1,0 +1,17 @@
+- generic [ref=f3e3]:
+  - complementary "Navegação principal" [ref=f3e4]:
+    - generic [ref=f3e5]: Reverso
+    - navigation [ref=f3e12]:
+      - link "Formulário" [ref=f3e13] [cursor=pointer]:
+        - /url: /alinare
+      - link "Status" [ref=f3e17] [cursor=pointer]:
+        - /url: /admin/status
+      - link "Dashboard" [ref=f3e21] [cursor=pointer]:
+        - /url: /admin/dashboard
+    - generic [ref=f3e24]:
+      - generic [ref=f3e25]:
+        - paragraph [ref=f3e26]: Operador Alinare
+        - paragraph [ref=f3e27]: Alinare
+      - button "Sair" [ref=f3e28] [cursor=pointer]
+  - main [ref=f3e33]:
+    - generic [ref=f3e34]: Status — em construção.

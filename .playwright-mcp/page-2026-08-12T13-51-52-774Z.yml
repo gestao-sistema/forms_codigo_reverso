@@ -1,0 +1,12 @@
+- generic [ref=e4]:
+  - generic [ref=e5]:
+    - heading "Logística Reversa" [level=1] [ref=e11]
+    - paragraph [ref=e12]: Entre com suas credenciais
+  - generic [ref=e13]:
+    - generic [ref=e14]:
+      - generic [ref=e15]: Usuário
+      - textbox "Usuário" [ref=e16]
+    - generic [ref=e17]:
+      - generic [ref=e18]: Senha
+      - textbox "Senha" [ref=e19]
+    - button "Entrar" [ref=e20] [cursor=pointer]
