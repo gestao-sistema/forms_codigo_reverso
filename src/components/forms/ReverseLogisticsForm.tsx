@@ -285,7 +285,7 @@ export default function ReverseLogisticsForm({ empresa }: ReverseLogisticsFormPr
                   `}
                   {...register('setor')}
                 >
-                  <option value="">Selecione o setor</option>
+                  <option value="" disabled>Selecione o setor</option>
                   {setores.map((s) => (
                     <option key={s} value={s}>{s}</option>
                   ))}
@@ -396,7 +396,7 @@ export default function ReverseLogisticsForm({ empresa }: ReverseLogisticsFormPr
                 `}
                 {...register('motivo')}
               >
-                <option value="">Selecione o motivo</option>
+                <option value="" disabled>Selecione o motivo</option>
                 {MOTIVOS.map((m) => (
                   <option key={m} value={m}>{m}</option>
                 ))}
@@ -468,7 +468,7 @@ export default function ReverseLogisticsForm({ empresa }: ReverseLogisticsFormPr
                 `}
                 {...register('autorizacao')}
               >
-                <option value="">Selecione o responsável</option>
+                <option value="" disabled>Selecione o responsável</option>
                 {autorizacoes.map((a) => (
                   <option key={a} value={a}>{a}</option>
                 ))}

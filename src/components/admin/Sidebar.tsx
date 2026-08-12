@@ -34,10 +34,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   const corAtiva =
     user?.perfil === 'Alinare'
-      ? 'bg-[#2B2D42] text-white border-l-4 border-blue-400'
+      ? 'bg-[#2B2D42] text-white'
       : user?.perfil === 'Novitah'
-      ? 'bg-[#A67B7B] text-white border-l-4 border-rose-300'
-      : 'bg-slate-700 text-white';
+      ? 'bg-[#A67B7B] text-white'
+      : 'bg-slate-900 text-white';
 
   return (
     <>
@@ -52,7 +52,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       <aside
         className={`
           fixed top-0 left-0 z-40 h-screen w-64
-          bg-slate-800 text-slate-200
+          ${user?.perfil === 'ADMIN' || user?.perfil === 'Expedicao' ? 'bg-white text-slate-800 border-r border-slate-200' : 'bg-slate-800 text-slate-200'}
           flex flex-col
           transition-transform duration-200 ease-out
           lg:translate-x-0
@@ -60,7 +60,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         `}
         aria-label="Navegação principal"
       >
-        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-700">
+        <div className={`flex items-center justify-between px-6 py-5 border-b ${user?.perfil === 'ADMIN' || user?.perfil === 'Expedicao' ? 'border-slate-200' : 'border-slate-700'}`}>
           <div className="flex items-center gap-3">
             {logoEmpresa ? (
               <img
@@ -71,7 +71,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             ) : (
               <PackageOpen className="w-6 h-6 text-blue-400" aria-hidden="true" />
             )}
-            <span className="text-lg font-bold text-white">
+            <span className={`text-lg font-bold ${user?.perfil === 'ADMIN' || user?.perfil === 'Expedicao' ? 'text-slate-900' : 'text-white'}`}>
               {user?.perfil === 'Alinare' || user?.perfil === 'Novitah'
                 ? user.perfil
                 : 'Reverso'}
@@ -80,7 +80,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           <button
             type="button"
             onClick={onClose}
-            className="lg:hidden p-1.5 rounded-lg hover:bg-slate-700 transition-colors cursor-pointer"
+            className={`lg:hidden p-1.5 rounded-lg transition-colors cursor-pointer ${user?.perfil === 'ADMIN' || user?.perfil === 'Expedicao' ? 'hover:bg-slate-100 text-slate-500' : 'hover:bg-slate-700 text-slate-400'}`}
             aria-label="Fechar menu"
           >
             <X className="w-5 h-5" />
@@ -99,6 +99,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 text-sm font-medium transition-all duration-150
                 ${isActive
                   ? corAtiva
+                  : user?.perfil === 'ADMIN' || user?.perfil === 'Expedicao'
+                  ? 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                   : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
                 }
               `}
@@ -109,17 +111,21 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           ))}
         </nav>
 
-        <div className="px-4 py-4 border-t border-slate-700 space-y-3">
+        <div className={`px-4 py-4 border-t space-y-3 ${user?.perfil === 'ADMIN' || user?.perfil === 'Expedicao' ? 'border-slate-200' : 'border-slate-700'}`}>
           {user && (
             <div className="px-2">
-              <p className="text-sm font-medium text-white truncate">{user.nome}</p>
-              <p className="text-xs text-slate-400">{PERFIL_LABEL[user.perfil]}</p>
+              <p className={`text-sm font-medium truncate ${user?.perfil === 'ADMIN' || user?.perfil === 'Expedicao' ? 'text-slate-900' : 'text-white'}`}>{user.nome}</p>
+              <p className={`text-xs ${user?.perfil === 'ADMIN' || user?.perfil === 'Expedicao' ? 'text-slate-500' : 'text-slate-400'}`}>{PERFIL_LABEL[user.perfil]}</p>
             </div>
           )}
           <button
             type="button"
             onClick={handleLogout}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-700 hover:text-white transition-colors cursor-pointer"
+            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+              user?.perfil === 'ADMIN' || user?.perfil === 'Expedicao'
+                ? 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+            }`}
           >
             <LogOut className="w-4 h-4" />
             Sair
