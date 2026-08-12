@@ -7,7 +7,7 @@
 // `tempo_preenchimento_segundos` no momento do submit — sem exibir ao usuário.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import DatePicker, { registerLocale } from 'react-datepicker';
@@ -97,8 +97,27 @@ export default function ReverseLogisticsForm({ empresa }: ReverseLogisticsFormPr
   const autorizacoes = AUTORIZACOES[empresa];
   const setores = SETORES_POR_EMPRESA[empresa];
 
-  // Cronômetro: registra o instante de montagem do formulário
-  const startTimeRef = useRef<number>(Date.now());
+  // Cronômetro: registra o instante da primeira interação
+  const startTimeRef = useRef<number | null>(null);
+
+  // Escuta primeiro input ou focusin para iniciar o cronômetro
+  useEffect(() => {
+    const handleInteraction = () => {
+      if (startTimeRef.current === null) {
+        startTimeRef.current = Date.now();
+      }
+    };
+
+    // Anexa window para pegar qualquer interação antes mesmo do render completo
+    // ou do form-wrapper, caso prefira pegar no form mude o ref pro form
+    window.addEventListener('input', handleInteraction, { once: true });
+    window.addEventListener('focusin', handleInteraction, { once: true });
+
+    return () => {
+      window.removeEventListener('input', handleInteraction);
+      window.removeEventListener('focusin', handleInteraction);
+    };
+  }, []);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -132,8 +151,13 @@ export default function ReverseLogisticsForm({ empresa }: ReverseLogisticsFormPr
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
 
-    // Calcula segundos desde a abertura do formulário
-    const tempoSegundos = Math.floor((Date.now() - startTimeRef.current) / 1000);
+    // Calcula segundos desde a primeira interação, protegendo contra relógio alterado
+    let tempoSegundos = startTimeRef.current
+      ? Math.floor((Date.now() - startTimeRef.current) / 1000)
+      : 0; // fallback se submeteu sem interagir
+
+    // Impede tempo negativo e capa em 24h (86400s) para não distorcer KPIs se largar a aba aberta
+    tempoSegundos = Math.max(0, Math.min(tempoSegundos, 86400));
 
     try {
       await apiService.createSolicitacao({
@@ -155,8 +179,8 @@ export default function ReverseLogisticsForm({ empresa }: ReverseLogisticsFormPr
 
       toast.success('Solicitação enviada com sucesso!');
       reset();
-      // Reinicia o cronômetro após submit bem-sucedido
-      startTimeRef.current = Date.now();
+      // Reinicia o cronômetro para o próximo preenchimento, aguardando nova interação
+      startTimeRef.current = null;
     } catch {
       toast.error('Erro ao enviar solicitação. Tente novamente.');
     } finally {
