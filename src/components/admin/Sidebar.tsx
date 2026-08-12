@@ -74,7 +74,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             <span className="text-lg font-bold text-slate-900">
               {user?.perfil === 'Alinare' || user?.perfil === 'Novitah'
                 ? user.perfil
-                : 'Reverso'}
+                : 'GLR'}
             </span>
           </div>
           <button

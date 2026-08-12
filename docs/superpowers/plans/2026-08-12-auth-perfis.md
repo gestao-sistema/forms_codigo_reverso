@@ -533,7 +533,7 @@ export default function LoginPage() {
           <div className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center mb-3">
             <PackageOpen className="w-6 h-6 text-blue-400" />
           </div>
-          <h1 className="text-xl font-bold text-slate-900">Logística Reversa</h1>
+          <h1 className="text-xl font-bold text-slate-900">Gestão de Logística Reversa</h1>
           <p className="text-sm text-slate-500 mt-1">Entre com suas credenciais</p>
         </div>
 
@@ -834,7 +834,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         <div className="flex items-center justify-between px-6 py-5 border-b border-slate-700">
           <div className="flex items-center gap-2.5">
             <PackageOpen className="w-6 h-6 text-blue-400" aria-hidden="true" />
-            <span className="text-lg font-bold text-white">Reverso</span>
+            <span className="text-lg font-bold text-white">GLR</span>
           </div>
           <button
             type="button"
