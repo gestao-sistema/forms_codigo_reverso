@@ -1,24 +1,19 @@
-// ── Service Layer: Autenticação (mock localStorage) ──────────────────────────
+// ── Service Layer: Autenticação (Supabase) ────────────────────────────────────
 //
-// Espelha o padrão de apiService: interface pública + implementação injetável.
-// Para plugar Supabase Auth: implementar IAuthService e exportar no lugar.
-// Componentes NUNCA acessam localStorage direto — sempre via este serviço.
+// Usuários na tabela `usuarios` do Supabase. Login é feito no Supabase e
+// a sessão persiste no localStorage do Supabase Auth.
+// Componentes NUNCA acessam o banco diretamente — sempre via este serviço.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import type { Usuario, UsuarioAutenticado } from '../types';
-
-const LS_USUARIOS = 'cr_usuarios';
-const LS_SESSAO = 'cr_sessao';
-
-const delay = (ms = 400) => new Promise<void>((r) => setTimeout(r, ms));
-const uuid = (): string => crypto.randomUUID();
+import { supabase } from '../lib/supabase';
+import type { Usuario, UsuarioAutenticado, Perfil } from '../types';
 
 export class AuthError extends Error {}
 
 export interface IAuthService {
   login(usuario: string, senha: string): Promise<UsuarioAutenticado>;
   logout(): Promise<void>;
-  /** Lê sessão atual do storage (síncrono). null se deslogado. */
+  /** Lê sessão atual (síncrono). null se deslogado. */
   getSessao(): UsuarioAutenticado | null;
   listarUsuarios(): Promise<Usuario[]>;
   criarUsuario(data: Omit<Usuario, 'id'>): Promise<Usuario>;
@@ -26,30 +21,13 @@ export interface IAuthService {
   removerUsuario(id: string): Promise<void>;
 }
 
-// ── Seed inicial (dev). TODO: hash de senha ao integrar backend. ─────────────
-const SEED: Usuario[] = [
-  { id: uuid(), nome: 'Administrador',    usuario: 'admin',     senha: 'admin123',     perfil: 'ADMIN' },
-  { id: uuid(), nome: 'Operador Alinare', usuario: 'alinare',   senha: 'alinare123',   perfil: 'Alinare' },
-  { id: uuid(), nome: 'Operador Novitah', usuario: 'novitah',   senha: 'novitah123',   perfil: 'Novitah' },
-  { id: uuid(), nome: 'Expedição',        usuario: 'expedicao', senha: 'expedicao123', perfil: 'Expedicao' },
-];
+// ── Mapa linha → objeto Usuario ───────────────────────────────────────────────
 
-function lerUsuarios(): Usuario[] {
-  const raw = localStorage.getItem(LS_USUARIOS);
-  if (!raw) {
-    localStorage.setItem(LS_USUARIOS, JSON.stringify(SEED));
-    return [...SEED];
-  }
-  try {
-    return JSON.parse(raw) as Usuario[];
-  } catch {
-    localStorage.setItem(LS_USUARIOS, JSON.stringify(SEED));
-    return [...SEED];
-  }
-}
-
-function gravarUsuarios(lista: Usuario[]): void {
-  localStorage.setItem(LS_USUARIOS, JSON.stringify(lista));
+interface UsuarioRow {
+  id: string;
+  nome: string;
+  usuario: string;
+  perfil: Perfil;
 }
 
 const semSenha = (u: Usuario): UsuarioAutenticado => {
@@ -57,27 +35,30 @@ const semSenha = (u: Usuario): UsuarioAutenticado => {
   return rest;
 };
 
+// ── Implementação ─────────────────────────────────────────────────────────────
+
 const authService: IAuthService = {
   async login(usuario, senha) {
-    await delay();
-    const encontrado = lerUsuarios().find(
-      (u) => u.usuario === usuario.trim() && u.senha === senha
-    );
-    if (!encontrado) {
-      throw new AuthError('Usuário ou senha inválidos.');
-    }
-    const sessao = semSenha(encontrado);
-    localStorage.setItem(LS_SESSAO, JSON.stringify(sessao));
+    const { data, error } = await supabase
+      .from('usuarios')
+      .select('*')
+      .eq('usuario', usuario.trim())
+      .single();
+
+    if (error || !data) throw new AuthError('Usuário ou senha inválidos.');
+    if (data.senha !== senha) throw new AuthError('Usuário ou senha inválidos.');
+
+    const sessao = semSenha(data as Usuario);
+    localStorage.setItem('cr_sessao', JSON.stringify(sessao));
     return sessao;
   },
 
   async logout() {
-    await delay(150);
-    localStorage.removeItem(LS_SESSAO);
+    localStorage.removeItem('cr_sessao');
   },
 
   getSessao() {
-    const raw = localStorage.getItem(LS_SESSAO);
+    const raw = localStorage.getItem('cr_sessao');
     if (!raw) return null;
     try {
       return JSON.parse(raw) as UsuarioAutenticado;
@@ -87,48 +68,80 @@ const authService: IAuthService = {
   },
 
   async listarUsuarios() {
-    await delay(200);
-    return lerUsuarios();
+    const { data, error } = await supabase
+      .from('usuarios')
+      .select('id, nome, usuario, perfil')
+      .order('nome');
+    if (error) throw new AuthError(error.message);
+    // senha não volta na listagem; preenche vazio p/ compat de tipo
+    return (data as UsuarioRow[]).map((r) => ({ ...r, senha: '' }));
   },
 
   async criarUsuario(data) {
-    await delay(300);
-    const lista = lerUsuarios();
-    if (lista.some((u) => u.usuario === data.usuario.trim())) {
-      throw new AuthError('Já existe um usuário com esse login.');
-    }
-    const novo: Usuario = { ...data, usuario: data.usuario.trim(), id: uuid() };
-    gravarUsuarios([...lista, novo]);
-    return novo;
+    const { data: existente } = await supabase
+      .from('usuarios')
+      .select('id')
+      .eq('usuario', data.usuario.trim())
+      .maybeSingle();
+    if (existente) throw new AuthError('Já existe um usuário com esse login.');
+
+    const { data: novo, error } = await supabase
+      .from('usuarios')
+      .insert({ ...data, usuario: data.usuario.trim() })
+      .select()
+      .single();
+    if (error) throw new AuthError(error.message);
+    return novo as Usuario;
   },
 
   async atualizarUsuario(id, data) {
-    await delay(300);
-    const lista = lerUsuarios();
-    const i = lista.findIndex((u) => u.id === id);
-    if (i === -1) throw new AuthError('Usuário não encontrado.');
     // Admin padrão (login 'admin') não pode ter login/perfil alterados
-    if (lista[i].usuario === 'admin' && (data.usuario || data.perfil)) {
+    const { data: atual } = await supabase
+      .from('usuarios')
+      .select('usuario')
+      .eq('id', id)
+      .single();
+    if (atual?.usuario === 'admin' && (data.usuario || data.perfil)) {
       throw new AuthError('Não é possível alterar login ou perfil do administrador padrão.');
     }
     // Login duplicado (exceto ele mesmo)
-    if (data.usuario && lista.some((u) => u.usuario === data.usuario!.trim() && u.id !== id)) {
-      throw new AuthError('Já existe um usuário com esse login.');
+    if (data.usuario) {
+      const { data: dup } = await supabase
+        .from('usuarios')
+        .select('id')
+        .eq('usuario', data.usuario.trim())
+        .neq('id', id)
+        .maybeSingle();
+      if (dup) throw new AuthError('Já existe um usuário com esse login.');
     }
-    const atualizado: Usuario = { ...lista[i], ...data };
-    if (data.usuario) atualizado.usuario = data.usuario.trim();
-    gravarUsuarios([...lista.slice(0, i), atualizado, ...lista.slice(i + 1)]);
-    return atualizado;
+
+    const payload: Record<string, unknown> = { ...data };
+    if (data.usuario) payload.usuario = data.usuario.trim();
+    // senha vazia não sobrescreve
+    if (!payload.senha) delete payload.senha;
+
+    const { data: atualizado, error } = await supabase
+      .from('usuarios')
+      .update(payload)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw new AuthError(error.message);
+    return atualizado as Usuario;
   },
 
   async removerUsuario(id) {
-    await delay(300);
-    const lista = lerUsuarios();
-    const alvo = lista.find((u) => u.id === id);
-    if (alvo && alvo.usuario === 'admin') {
+    const { data: alvo } = await supabase
+      .from('usuarios')
+      .select('usuario')
+      .eq('id', id)
+      .single();
+    if (alvo?.usuario === 'admin') {
       throw new AuthError('Não é possível remover o administrador padrão.');
     }
-    gravarUsuarios(lista.filter((u) => u.id !== id));
+
+    const { error } = await supabase.from('usuarios').delete().eq('id', id);
+    if (error) throw new AuthError(error.message);
   },
 };
 

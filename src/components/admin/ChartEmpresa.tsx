@@ -41,8 +41,8 @@ export default function ChartEmpresa({ data }: ChartEmpresaProps) {
           ))}
         </Pie>
         <Tooltip
-          formatter={(value: number, name: string, props: any) => {
-            const percent = props.payload.percent || 0;
+          formatter={(value, name, props) => {
+            const percent = (props as { payload?: { percent?: number } })?.payload?.percent || 0;
             return [`${Math.round(percent * 100)}% | ${value}`, name];
           }}
           contentStyle={{
