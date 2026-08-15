@@ -13,6 +13,8 @@ interface ChartEmpresaProps {
 }
 
 export default function ChartEmpresa({ data }: ChartEmpresaProps) {
+  const total = data.reduce((acc, d) => acc + d.quantidade, 0);
+
   return (
     <ResponsiveContainer width="100%" height={280}>
       <PieChart>
@@ -41,9 +43,10 @@ export default function ChartEmpresa({ data }: ChartEmpresaProps) {
           ))}
         </Pie>
         <Tooltip
-          formatter={(value, name, props) => {
-            const percent = (props as { payload?: { percent?: number } })?.payload?.percent || 0;
-            return [`${Math.round(percent * 100)}% | ${value}`, name];
+          formatter={(value, name) => {
+            const num = Number(value) || 0;
+            const percent = total > 0 ? (num / total) * 100 : 0;
+            return [`${Math.round(percent)}% | ${num}`, name];
           }}
           contentStyle={{
             borderRadius: 10,

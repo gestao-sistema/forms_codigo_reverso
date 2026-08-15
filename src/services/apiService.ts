@@ -54,6 +54,7 @@ const apiService: IApiService = {
     let query = supabase
       .from('solicitacoes_reverso')
       .select('*')
+      .order('data_solicitacao', { ascending: false })
       .order('created_at', { ascending: false });
 
     if (filtros?.empresa && filtros.empresa !== 'Ambas') {

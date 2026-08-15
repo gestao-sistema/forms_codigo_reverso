@@ -121,15 +121,19 @@ export interface MotivoEmpresaDatum {
   motivo: string;
   Alinare: number;
   Novitah: number;
+  total: number;
 }
 
 export function porMotivoEmpresa(dados: Solicitacao[]): MotivoEmpresaDatum[] {
   return MOTIVOS.map((motivo) => {
     const doMotivo = dados.filter((s) => s.motivo === motivo);
+    const alinare = doMotivo.filter((s) => s.empresa === 'Alinare').length;
+    const novitah = doMotivo.filter((s) => s.empresa === 'Novitah').length;
     return {
       motivo,
-      Alinare: doMotivo.filter((s) => s.empresa === 'Alinare').length,
-      Novitah: doMotivo.filter((s) => s.empresa === 'Novitah').length,
+      Alinare: alinare,
+      Novitah: novitah,
+      total: alinare + novitah,
     };
   });
 }

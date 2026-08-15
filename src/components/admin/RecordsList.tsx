@@ -48,35 +48,26 @@ export default function RecordsList({
     );
   }
 
+  const thCls = 'px-4 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap';
+  const tdCls = 'px-4 py-3 text-sm text-slate-700 whitespace-nowrap';
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse min-w-[700px]">
+        <table className="w-full text-left border-collapse min-w-[1100px]">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200">
-              <th className="px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                Empresa
-              </th>
-              <th className="px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                Data
-              </th>
-              <th className="px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                Solicitante
-              </th>
-              <th className="px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                Cliente
-              </th>
-              <th className="px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                Motivo
-              </th>
-              <th className="px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                Autorização
-              </th>
-              {!readOnly && (
-                <th className="px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">
-                  Resolvido
-                </th>
-              )}
+              {!readOnly && <th className={`${thCls} text-center`}>Resolvido</th>}
+              <th className={thCls}>Empresa</th>
+              <th className={thCls}>Data</th>
+              <th className={thCls}>Solicitante</th>
+              <th className={thCls}>Setor</th>
+              <th className={thCls}>Código</th>
+              <th className={thCls}>Cliente</th>
+              <th className={thCls}>Motivo</th>
+              <th className={thCls}>Endereço de Postagem</th>
+              <th className={thCls}>Justificativa</th>
+              <th className={thCls}>Autorização</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -86,35 +77,8 @@ export default function RecordsList({
                 onClick={() => onClickRow(s)}
                 className="hover:bg-slate-50/80 transition-colors cursor-pointer group"
               >
-                <td className="px-5 py-3 whitespace-nowrap">
-                  <span
-                    className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold text-white`}
-                    style={{ backgroundColor: COR_EMPRESA[s.empresa] }}
-                  >
-                    {s.empresa}
-                  </span>
-                </td>
-                <td className="px-5 py-3 whitespace-nowrap text-sm text-slate-600 font-medium">
-                  {formatDate(s.data_solicitacao)}
-                </td>
-                <td className="px-5 py-3 whitespace-nowrap text-sm text-slate-700">
-                  {s.solicitante}
-                </td>
-                <td className="px-5 py-3 whitespace-nowrap">
-                  <div className="text-sm font-medium text-slate-900 group-hover:text-blue-600 transition-colors">
-                    {s.nome_cliente}
-                  </div>
-                  <div className="text-xs text-slate-500">#{s.codigo_cliente}</div>
-                </td>
-                <td className="px-5 py-3 text-sm text-slate-700 max-w-[200px] truncate">
-                  {s.motivo}
-                </td>
-                <td className="px-5 py-3 text-sm text-slate-700 whitespace-nowrap">
-                  {s.autorizacao}
-                </td>
                 {!readOnly && (
-                  <td className="px-5 py-3 text-center whitespace-nowrap">
-                    {/* Container invisível aumenta área de clique do checkbox */}
+                  <td className="px-4 py-3 text-center whitespace-nowrap">
                     <div
                       className="inline-flex items-center justify-center p-2 -m-2 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
                       onClick={(e) => onToggleStatus?.(s.id, s.resolvido, e)}
@@ -124,12 +88,41 @@ export default function RecordsList({
                       <input
                         type="checkbox"
                         checked={s.resolvido}
-                        readOnly // Estado gerenciado pelo onClick do container pai
+                        readOnly
                         className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500 cursor-pointer pointer-events-none"
                       />
                     </div>
                   </td>
                 )}
+                <td className="px-4 py-3 whitespace-nowrap">
+                  <span
+                    className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold text-white`}
+                    style={{ backgroundColor: COR_EMPRESA[s.empresa] }}
+                  >
+                    {s.empresa}
+                  </span>
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-600 font-medium">
+                  {formatDate(s.data_solicitacao)}
+                </td>
+                <td className={tdCls}>{s.solicitante}</td>
+                <td className={tdCls}>{s.setor}</td>
+                <td className={tdCls}>#{s.codigo_cliente}</td>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  <div className="text-sm font-medium text-slate-900 group-hover:text-blue-600 transition-colors">
+                    {s.nome_cliente}
+                  </div>
+                </td>
+                <td className="px-4 py-3 text-sm text-slate-700 max-w-[180px] truncate" title={s.motivo}>
+                  {s.motivo}
+                </td>
+                <td className="px-4 py-3 text-sm text-slate-700 max-w-[220px] truncate" title={s.endereco_postagem}>
+                  {s.endereco_postagem}
+                </td>
+                <td className="px-4 py-3 text-sm text-slate-500 max-w-[180px] truncate" title={s.justificativa_outros ?? undefined}>
+                  {s.justificativa_outros ?? '—'}
+                </td>
+                <td className={tdCls}>{s.autorizacao}</td>
               </tr>
             ))}
           </tbody>

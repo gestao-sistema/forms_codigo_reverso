@@ -30,6 +30,8 @@ export function navItemsDoPerfil(perfil: Perfil): NavItem[] {
       return [
         { to: '/admin/dashboard', label: 'Dashboard', icon: BarChart3 },
         { to: '/admin/lista', label: 'Lista', icon: ClipboardList },
+        { to: '/admin/alinare', label: 'Formulário Alinare', icon: FileText },
+        { to: '/admin/novitah', label: 'Formulário Novitah', icon: FileText },
         { to: '/admin/usuarios', label: 'Usuários', icon: Users },
       ];
     case 'Expedicao':
