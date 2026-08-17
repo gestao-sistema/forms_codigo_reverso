@@ -1,146 +1,123 @@
-// ── Service Layer: Autenticação (Supabase) ────────────────────────────────────
+// ── Service Layer: Autenticação (Supabase Auth) ────────────────────────────────
 //
-// Usuários na tabela `usuarios` do Supabase. Login é feito no Supabase e
-// a sessão persiste no localStorage do Supabase Auth.
-// Componentes NUNCA acessam o banco diretamente — sempre via este serviço.
+// Usa a API de auth do Supabase (JWT nativo).
+// Login: signInWithPassword com email interno `{username}@cr.internal`
+// CRUD usuários: Edge Function `admin-usuarios` (service_role server-side).
+// Sessão: JWT + refresh token, gerenciado pelo SDK Supabase.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { supabase } from '../lib/supabase';
-import type { Usuario, UsuarioAutenticado, Perfil } from '../types';
+import type { Usuario, UsuarioAutenticado, CreateUsuarioPayload, UpdateUsuarioPayload } from '../types';
 
 export class AuthError extends Error {}
 
 export interface IAuthService {
   login(usuario: string, senha: string): Promise<UsuarioAutenticado>;
   logout(): Promise<void>;
-  /** Lê sessão atual (síncrono). null se deslogado. */
-  getSessao(): UsuarioAutenticado | null;
+  /** Lê sessão atual (async via Supabase). null se deslogado. */
+  getSessao(): Promise<UsuarioAutenticado | null>;
+  /** Escuta mudanças de estado (mount inicial + refresh). Retorna unsubscribe. */
+  onMudancaSessao(cb: (user: UsuarioAutenticado | null) => void): () => void;
   listarUsuarios(): Promise<Usuario[]>;
-  criarUsuario(data: Omit<Usuario, 'id'>): Promise<Usuario>;
-  atualizarUsuario(id: string, data: Partial<Omit<Usuario, 'id'>>): Promise<Usuario>;
+  criarUsuario(data: CreateUsuarioPayload): Promise<Usuario>;
+  atualizarUsuario(id: string, data: UpdateUsuarioPayload): Promise<Usuario>;
   removerUsuario(id: string): Promise<void>;
 }
 
-// ── Mapa linha → objeto Usuario ───────────────────────────────────────────────
+// ── Helpers ─────────────────────────────────────────────────────────────────────
 
-interface UsuarioRow {
-  id: string;
-  nome: string;
-  usuario: string;
-  perfil: Perfil;
+/** Converte User do Supabase em UsuarioAutenticado (shape mantido para a app) */
+function toSession(u: any): UsuarioAutenticado {
+  return {
+    id: u.id,
+    nome: u.user_metadata?.nome ?? u.email,
+    usuario: u.user_metadata?.usuario ?? u.email?.split('@')[0],
+    perfil: u.user_metadata?.perfil ?? 'Alinare',
+  } as UsuarioAutenticado;
 }
 
-const semSenha = (u: Usuario): UsuarioAutenticado => {
-  const { senha: _senha, ...rest } = u;
-  return rest;
-};
+function toUsuario(u: any): Usuario {
+  return {
+    id: u.id,
+    nome: u.user_metadata?.nome ?? u.nome ?? '',
+    usuario: u.user_metadata?.usuario ?? u.usuario ?? '',
+    perfil: u.user_metadata?.perfil ?? u.perfil ?? 'Alinare',
+  };
+}
 
-// ── Implementação ─────────────────────────────────────────────────────────────
+// ── Implementação ──────────────────────────────────────────────────────────────
 
 const authService: IAuthService = {
   async login(usuario, senha) {
-    const { data, error } = await supabase
-      .from('usuarios')
-      .select('*')
-      .eq('usuario', usuario.trim())
-      .single();
+    const email = `${usuario.trim().toLowerCase()}@cr.internal`;
 
-    if (error || !data) throw new AuthError('Usuário ou senha inválidos.');
-    if (data.senha !== senha) throw new AuthError('Usuário ou senha inválidos.');
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password: senha,
+    });
 
-    const sessao = semSenha(data as Usuario);
-    localStorage.setItem('cr_sessao', JSON.stringify(sessao));
-    return sessao;
+    if (error || !data.user) {
+      throw new AuthError('Usuário ou senha inválidos.');
+    }
+
+    return toSession(data.user);
   },
 
   async logout() {
-    localStorage.removeItem('cr_sessao');
+    await supabase.auth.signOut();
   },
 
-  getSessao() {
-    const raw = localStorage.getItem('cr_sessao');
-    if (!raw) return null;
-    try {
-      return JSON.parse(raw) as UsuarioAutenticado;
-    } catch {
-      return null;
-    }
+  async getSessao() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return null;
+    return toSession(session.user);
+  },
+
+  onMudancaSessao(cb) {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      cb(session?.user ? toSession(session.user) : null);
+    });
+    return () => subscription.unsubscribe();
   },
 
   async listarUsuarios() {
-    const { data, error } = await supabase
-      .from('usuarios')
-      .select('id, nome, usuario, perfil')
-      .order('nome');
+    const { data, error } = await supabase.functions.invoke('admin-usuarios', {
+      body: { action: 'list' },
+    });
+
     if (error) throw new AuthError(error.message);
-    // senha não volta na listagem; preenche vazio p/ compat de tipo
-    return (data as UsuarioRow[]).map((r) => ({ ...r, senha: '' }));
+    return data.data.map((u: any) => toUsuario(u));
   },
 
   async criarUsuario(data) {
-    const { data: existente } = await supabase
-      .from('usuarios')
-      .select('id')
-      .eq('usuario', data.usuario.trim())
-      .maybeSingle();
-    if (existente) throw new AuthError('Já existe um usuário com esse login.');
+    const { data: result, error } = await supabase.functions.invoke('admin-usuarios', {
+      body: { action: 'create', payload: { ...data, usuario: data.usuario.trim().toLowerCase() } },
+    });
 
-    const { data: novo, error } = await supabase
-      .from('usuarios')
-      .insert({ ...data, usuario: data.usuario.trim() })
-      .select()
-      .single();
     if (error) throw new AuthError(error.message);
-    return novo as Usuario;
+    return toUsuario(result.data);
   },
 
-  async atualizarUsuario(id, data) {
-    // Admin padrão (login 'admin') não pode ter login/perfil alterados
-    const { data: atual } = await supabase
-      .from('usuarios')
-      .select('usuario')
-      .eq('id', id)
-      .single();
-    if (atual?.usuario === 'admin' && (data.usuario || data.perfil)) {
-      throw new AuthError('Não é possível alterar login ou perfil do administrador padrão.');
-    }
-    // Login duplicado (exceto ele mesmo)
-    if (data.usuario) {
-      const { data: dup } = await supabase
-        .from('usuarios')
-        .select('id')
-        .eq('usuario', data.usuario.trim())
-        .neq('id', id)
-        .maybeSingle();
-      if (dup) throw new AuthError('Já existe um usuário com esse login.');
-    }
+  async atualizarUsuario(id, data: UpdateUsuarioPayload) {
+    const payload: any = { id };
+    if (data.nome) payload.nome = data.nome;
+    if (data.perfil) payload.perfil = data.perfil;
+    if (data.usuario) payload.usuario = data.usuario.trim().toLowerCase();
+    if (data.senha) payload.senha = data.senha;
 
-    const payload: Record<string, unknown> = { ...data };
-    if (data.usuario) payload.usuario = data.usuario.trim();
-    // senha vazia não sobrescreve
-    if (!payload.senha) delete payload.senha;
+    const { data: result, error } = await supabase.functions.invoke('admin-usuarios', {
+      body: { action: 'update', payload },
+    });
 
-    const { data: atualizado, error } = await supabase
-      .from('usuarios')
-      .update(payload)
-      .eq('id', id)
-      .select()
-      .single();
     if (error) throw new AuthError(error.message);
-    return atualizado as Usuario;
+    return toUsuario(result.data);
   },
 
   async removerUsuario(id) {
-    const { data: alvo } = await supabase
-      .from('usuarios')
-      .select('usuario')
-      .eq('id', id)
-      .single();
-    if (alvo?.usuario === 'admin') {
-      throw new AuthError('Não é possível remover o administrador padrão.');
-    }
+    const { error } = await supabase.functions.invoke('admin-usuarios', {
+      body: { action: 'delete', payload: { id } },
+    });
 
-    const { error } = await supabase.from('usuarios').delete().eq('id', id);
     if (error) throw new AuthError(error.message);
   },
 };

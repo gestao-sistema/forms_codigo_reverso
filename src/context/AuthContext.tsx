@@ -1,5 +1,5 @@
 // ── Contexto de autenticação ─────────────────────────────────────────────────
-// Fonte única da sessão. Telas consomem via useAuth(); nunca tocam localStorage.
+// Fonte única da sessão (Supabase Auth). Telas consomem via useAuth().
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import authService from '../services/authService';
@@ -18,10 +18,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UsuarioAutenticado | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Restaura sessão do storage na montagem
+  // Restaura sessão (async via Supabase) e observa mudanças
   useEffect(() => {
-    setUser(authService.getSessao());
-    setIsLoading(false);
+    let active = true;
+
+    authService.getSessao().then((sessao) => {
+      if (active) {
+        setUser(sessao);
+        setIsLoading(false);
+      }
+    });
+
+    const unsub = authService.onMudancaSessao((u) => {
+      if (active) setUser(u);
+    });
+
+    return () => {
+      active = false;
+      unsub();
+    };
   }, []);
 
   const value = useMemo<AuthContextValue>(

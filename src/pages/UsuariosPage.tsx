@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Loader2, Plus, Pencil, Trash2, X, UserPlus } from 'lucide-react';
 import authService from '../services/authService';
-import type { Usuario, Perfil } from '../types';
+import type { Usuario, Perfil, UpdateUsuarioPayload } from '../types';
 import { PERFIL_LABEL } from '../types';
 
 type FormState = {
@@ -64,7 +64,7 @@ export default function UsuariosPage() {
     setSalvando(true);
     try {
       if (modoEdicao && form.id) {
-        const payload: Partial<Omit<Usuario, 'id'>> = {
+        const payload: UpdateUsuarioPayload = {
           nome: form.nome,
           usuario: form.usuario,
           perfil: form.perfil,

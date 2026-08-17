@@ -14,6 +14,7 @@ export interface FiltrosState {
   empresa: FiltroEmpresa;
   dataInicio: string; // YYYY-MM-DD ou ''
   dataFim: string;    // YYYY-MM-DD ou ''
+  buscaCliente: string; // Busca por nome do cliente
 }
 
 interface DashboardFiltersProps {
@@ -25,6 +26,8 @@ interface DashboardFiltersProps {
   isRefreshing: boolean;
   /** Quando presente, trava e oculta o seletor de empresa. */
   empresaFixa?: Empresa;
+  /** Exibe busca por cliente (apenas na Lista). */
+  showBuscaCliente?: boolean;
 }
 
 // Helpers de conversão Date <-> string (mesma lógica do formulário)
@@ -51,12 +54,13 @@ export default function DashboardFilters({
   ultimaAtualizacao,
   isRefreshing,
   empresaFixa,
+  showBuscaCliente = true,
 }: DashboardFiltersProps) {
   const resetFiltros = () =>
-    onChange({ empresa: empresaFixa ?? 'Ambas', dataInicio: '', dataFim: '' });
+    onChange({ empresa: empresaFixa ?? 'Ambas', dataInicio: '', dataFim: '', buscaCliente: '' });
 
   const temFiltroAtivo =
-    filtros.empresa !== 'Ambas' || filtros.dataInicio || filtros.dataFim;
+    filtros.empresa !== 'Ambas' || filtros.dataInicio || filtros.dataFim || filtros.buscaCliente;
 
   return (
     <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
@@ -122,6 +126,20 @@ export default function DashboardFilters({
               <option value="Alinare">Alinare</option>
               <option value="Novitah">Novitah</option>
             </select>
+          </div>
+        )}
+
+        {/* Busca por Cliente */}
+        {showBuscaCliente && (
+          <div className="flex flex-col flex-1 min-w-[200px]">
+            <label className="text-xs font-medium text-slate-500 mb-1">Cliente</label>
+            <input
+              type="text"
+              placeholder="Nome do cliente..."
+              value={filtros.buscaCliente}
+              onChange={(e) => onChange({ ...filtros, buscaCliente: e.target.value })}
+              className={inputCls}
+            />
           </div>
         )}
 

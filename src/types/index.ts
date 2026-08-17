@@ -86,6 +86,7 @@ export interface FiltrosSolicitacoes {
   dataInicio?: string; // YYYY-MM-DD
   dataFim?: string;    // YYYY-MM-DD
   resolvido?: boolean;
+  buscaCliente?: string;
 }
 
 // ── Autenticação e perfis de acesso ──────────────────────────────────────────
@@ -93,19 +94,23 @@ export interface FiltrosSolicitacoes {
 /** Perfis de acesso do sistema. `Expedicao` sem cedilha em código; label "Expedição". */
 export type Perfil = 'ADMIN' | 'Alinare' | 'Novitah' | 'Expedicao';
 
-/** Usuário do sistema (mock). Senha em texto plano — dev only. */
+/** Usuário do sistema (Supabase Auth). Senha NÃO armazenada no client. */
 export interface Usuario {
   id: string;
   nome: string;
   /** Login único (username) */
   usuario: string;
-  /** TODO: hash ao integrar backend */
-  senha: string;
   perfil: Perfil;
 }
 
 /** Usuário autenticado exposto pela sessão — nunca carrega senha. */
-export type UsuarioAutenticado = Omit<Usuario, 'senha'>;
+export type UsuarioAutenticado = Usuario;
+
+/** Payload para criação de usuário */
+export type CreateUsuarioPayload = Omit<Usuario, 'id'> & { senha?: string };
+
+/** Payload para atualização de usuário */
+export type UpdateUsuarioPayload = Partial<Usuario> & { senha?: string };
 
 /** Escopo de empresa por perfil. `null` = ambas (ADMIN, Expedicao). */
 export const ESCOPO_EMPRESA: Record<Perfil, Empresa | null> = {

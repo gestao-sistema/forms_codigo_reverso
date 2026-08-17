@@ -22,6 +22,7 @@ export interface IApiService {
     data: UpdateSolicitacaoPayload
   ): Promise<Solicitacao>;
   getSolicitacaoById(id: string): Promise<Solicitacao | null>;
+  deleteSolicitacao(id: string): Promise<void>;
 }
 
 /** Converte erro Supabase em mensagem legível */
@@ -69,10 +70,19 @@ const apiService: IApiService = {
     if (filtros?.resolvido !== undefined) {
       query = query.eq('resolvido', filtros.resolvido);
     }
-
     const { data, error } = await query;
     checarErro(error, 'Erro ao buscar solicitações.');
-    return (data ?? []) as Solicitacao[];
+
+    let resultados = (data ?? []) as Solicitacao[];
+
+    if (filtros?.buscaCliente) {
+      const termo = filtros.buscaCliente.toLowerCase().trim();
+      resultados = resultados.filter((s) => {
+        return s.nome_cliente.toLowerCase().includes(termo);
+      });
+    }
+
+    return resultados;
   },
 
   /**
@@ -106,6 +116,18 @@ const apiService: IApiService = {
 
     checarErro(error, 'Erro ao buscar solicitação.');
     return (data as Solicitacao) ?? null;
+  },
+
+  /**
+   * Remove uma solicitação pelo ID.
+   */
+  async deleteSolicitacao(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('solicitacoes_reverso')
+      .delete()
+      .eq('id', id);
+
+    checarErro(error, 'Erro ao apagar solicitação.');
   },
 };
 

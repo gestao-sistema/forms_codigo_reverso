@@ -1,23 +1,29 @@
 // ── Lista em Tabela das Solicitações ─────────────────────────────────────────
-import { Inbox } from 'lucide-react';
+import { Inbox, Trash2 } from 'lucide-react';
 import type { Solicitacao } from '../../types';
 import { COR_EMPRESA } from '../../services/analytics';
 
 interface RecordsListProps {
   dados: Solicitacao[];
   onToggleStatus?: (id: string, currentStatus: boolean, e: React.MouseEvent) => void;
+  /** Apaga uma solicitação. Exibido apenas quando showDelete está ativo. */
+  onDelete?: (id: string, e: React.MouseEvent) => void;
   onClickRow: (solicitacao: Solicitacao) => void;
   loading: boolean;
   /** Oculta a coluna/ação "Resolvido" (usado no Status view-only) */
   readOnly?: boolean;
+  /** Exibe coluna/ação de apagar (apenas ADMIN deve ativar) */
+  showDelete?: boolean;
 }
 
 export default function RecordsList({
   dados,
   onToggleStatus,
+  onDelete,
   onClickRow,
   loading,
   readOnly,
+  showDelete,
 }: RecordsListProps) {
   // Formatador
   const formatDate = (dateStr: string) => {
@@ -68,6 +74,7 @@ export default function RecordsList({
               <th className={thCls}>Endereço de Postagem</th>
               <th className={thCls}>Justificativa</th>
               <th className={thCls}>Autorização</th>
+              {showDelete && <th className={`${thCls} text-center`}>Ações</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -123,6 +130,22 @@ export default function RecordsList({
                   {s.justificativa_outros ?? '—'}
                 </td>
                 <td className={tdCls}>{s.autorizacao}</td>
+                {showDelete && (
+                  <td className="px-4 py-3 text-center whitespace-nowrap">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation(); // impede abrir modal da linha
+                        onDelete?.(s.id, e);
+                      }}
+                      className="inline-flex items-center justify-center p-2 -m-2 rounded-full text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                      aria-label="Apagar solicitação"
+                      title="Apagar"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

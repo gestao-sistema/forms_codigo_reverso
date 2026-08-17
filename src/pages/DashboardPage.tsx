@@ -36,6 +36,7 @@ export default function DashboardPage() {
     empresa: empresaFixa ?? 'Ambas',
     dataInicio: '',
     dataFim: '',
+    buscaCliente: '',
   });
 
   // Converte filtros da UI para o formato do serviço
@@ -93,6 +94,7 @@ export default function DashboardPage() {
         ultimaAtualizacao={ultimaAtualizacao}
         isRefreshing={refreshing}
         empresaFixa={empresaFixa ?? undefined}
+        showBuscaCliente={false}
       />
 
       {/* Cards de KPIs */}
