@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Loader2, Plus, Pencil, Trash2, X, UserPlus } from 'lucide-react';
 import authService from '../services/authService';
+import { useAuth } from '../context/AuthContext';
 import type { Usuario, Perfil, UpdateUsuarioPayload } from '../types';
 import { PERFIL_LABEL } from '../types';
 
@@ -18,12 +19,16 @@ const VAZIO: FormState = { nome: '', usuario: '', senha: '', perfil: 'Alinare' }
 const PERFIS: Perfil[] = ['ADMIN', 'Alinare', 'Novitah', 'Expedicao'];
 
 export default function UsuariosPage() {
+  const { user } = useAuth();
   const [lista, setLista] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
   const [salvando, setSalvando] = useState(false);
   const [abrirForm, setAbrirForm] = useState(false);
   const [form, setForm] = useState<FormState>(VAZIO);
   const [modoEdicao, setModoEdicao] = useState(false);
+  const editarSelf = modoEdicao && form.id === user?.id;
+
+  const isAdminDefault = form.usuario === 'admin' && modoEdicao;
 
   const carregar = async () => {
     setLoading(true);
@@ -66,9 +71,14 @@ export default function UsuariosPage() {
       if (modoEdicao && form.id) {
         const payload: UpdateUsuarioPayload = {
           nome: form.nome,
-          usuario: form.usuario,
-          perfil: form.perfil,
         };
+        if (!isAdminDefault) {
+          payload.usuario = form.usuario;
+        }
+        // Só atualiza perfil se não for o próprio usuário nem o admin padrão
+        if (!editarSelf && !isAdminDefault) {
+          payload.perfil = form.perfil;
+        }
         if (form.senha) payload.senha = form.senha;
         await authService.atualizarUsuario(form.id, payload);
         toast.success('Usuário atualizado.');
@@ -206,7 +216,15 @@ export default function UsuariosPage() {
               </div>
               <div className="flex flex-col">
                 <label htmlFor="u-login" className="text-xs font-medium text-slate-500 mb-1">Login</label>
-                <input id="u-login" type="text" value={form.usuario} onChange={(e) => setForm({ ...form, usuario: e.target.value })} className={inputCls} required />
+                <input
+                  id="u-login"
+                  type="text"
+                  value={form.usuario}
+                  onChange={(e) => setForm({ ...form, usuario: e.target.value })}
+                  className={inputCls + (isAdminDefault ? ' bg-slate-50 text-slate-500' : '')}
+                  required
+                  readOnly={isAdminDefault}
+                />
               </div>
               <div className="flex flex-col">
                 <label htmlFor="u-senha" className="text-xs font-medium text-slate-500 mb-1">
@@ -216,11 +234,22 @@ export default function UsuariosPage() {
               </div>
               <div className="flex flex-col">
                 <label htmlFor="u-perfil" className="text-xs font-medium text-slate-500 mb-1">Perfil</label>
-                <select id="u-perfil" value={form.perfil} onChange={(e) => setForm({ ...form, perfil: e.target.value as Perfil })} className={inputCls}>
-                  {PERFIS.map((p) => (
-                    <option key={p} value={p}>{PERFIL_LABEL[p]}</option>
-                  ))}
-                </select>
+                {editarSelf ? (
+                  <input
+                    id="u-perfil"
+                    type="text"
+                    value="Administrador"
+                    readOnly
+                    className={inputCls + ' bg-slate-50 text-slate-500'}
+                    tabIndex={-1}
+                  />
+                ) : (
+                  <select id="u-perfil" value={form.perfil} onChange={(e) => setForm({ ...form, perfil: e.target.value as Perfil })} className={inputCls}>
+                    {PERFIS.map((p) => (
+                      <option key={p} value={p}>{PERFIL_LABEL[p]}</option>
+                    ))}
+                  </select>
+                )}
               </div>
               <div className="flex items-center justify-end gap-2 pt-2">
                 <button type="button" onClick={fecharForm} className="h-10 px-4 rounded-lg border border-slate-300 text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors cursor-pointer">

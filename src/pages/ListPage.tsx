@@ -3,9 +3,7 @@ import { useMemo, useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useSolicitacoes } from '../hooks/useSolicitacoes';
 import { ESCOPO_EMPRESA, type FiltrosSolicitacoes, type Solicitacao } from '../types';
-import { Plus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import apiService from '../services/apiService';
 
 import DashboardFilters, { type FiltrosState } from '../components/admin/DashboardFilters';
@@ -114,24 +112,6 @@ export default function ListPage() {
           Gerencie e resolva os pedidos de devolução.
         </p>
       </div>
-
-      {/* Ações Rápidas (Admin) */}
-      {user?.perfil === 'ADMIN' && (
-        <div className="flex gap-3">
-          <button
-            onClick={() => navigate('/admin/alinare')}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[#2B2D42] text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
-          >
-            <Plus className="w-4 h-4" /> Nova Alinare
-          </button>
-          <button
-            onClick={() => navigate('/admin/novitah')}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[#A67B7B] text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
-          >
-            <Plus className="w-4 h-4" /> Nova Novitah
-          </button>
-        </div>
-      )}
 
       {/* Filtros */}
       <DashboardFilters
