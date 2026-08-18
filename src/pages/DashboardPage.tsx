@@ -27,10 +27,11 @@ import ChartAutorizador from '../components/admin/ChartAutorizador';
 const POLLING_MS = 15_000;
 
 export default function DashboardPage() {
-  // Trava o filtro de empresa conforme acesso
   const { user } = useAuth();
+  const searchParams = new URLSearchParams(window.location.search);
+  const queryEmpresa = searchParams.get('empresa') as 'Alinare' | 'Novitah' | null;
 
-  // Se o usuário não tem acesso ao dashboard geral, fixamos na empresa q ele tem acesso
+  // Trava o filtro de empresa conforme acesso
   const temGeral = user?.telas.includes('dashboard-geral');
   const temAlinare = user?.telas.includes('dashboard-alinare');
   const temNovitah = user?.telas.includes('dashboard-novitah');
@@ -39,6 +40,9 @@ export default function DashboardPage() {
   if (!temGeral) {
     if (temAlinare && !temNovitah) empresaFixa = 'Alinare';
     if (temNovitah && !temAlinare) empresaFixa = 'Novitah';
+  } else if (queryEmpresa && (queryEmpresa === 'Alinare' || queryEmpresa === 'Novitah')) {
+    // Admin com dashboard-geral: respeita query param ?empresa=
+    empresaFixa = queryEmpresa;
   }
 
   // Estado dos filtros da UI

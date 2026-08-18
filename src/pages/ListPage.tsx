@@ -14,8 +14,9 @@ import RecordDetailModal from '../components/admin/RecordDetailModal';
 const POLLING_MS = 15_000;
 
 export default function ListPage() {
-  // Trava o filtro de empresa conforme acesso
   const { user } = useAuth();
+  const searchParams = new URLSearchParams(window.location.search);
+  const queryEmpresa = searchParams.get('empresa') as 'Alinare' | 'Novitah' | null;
 
   const temGeral = user?.telas.includes('lista-geral');
   const temAlinare = user?.telas.includes('lista-alinare');
@@ -25,6 +26,8 @@ export default function ListPage() {
   if (!temGeral) {
     if (temAlinare && !temNovitah) empresaFixa = 'Alinare';
     if (temNovitah && !temAlinare) empresaFixa = 'Novitah';
+  } else if (queryEmpresa && (queryEmpresa === 'Alinare' || queryEmpresa === 'Novitah')) {
+    empresaFixa = queryEmpresa;
   }
 
   // ── Filtros globais (topo) ──

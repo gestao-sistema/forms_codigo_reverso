@@ -1,8 +1,10 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import apiService from '../services/apiService';
 import type { Solicitacao } from '../types';
 import { Clock, CheckCircle2, Search, Filter, ChevronDown, ChevronUp } from 'lucide-react';
+
+const POLLING_MS = 15_000;
 
 export default function StatusPage() {
   const { user } = useAuth();
@@ -11,6 +13,9 @@ export default function StatusPage() {
   const [busca, setBusca] = useState('');
   const [filtroStatus, setFiltroStatus] = useState<'todos' | 'concluido' | 'andamento'>('todos');
   const [expandidoId, setExpandidoId] = useState<string | null>(null);
+  const [ultimaAtualizacao, setUltimaAtualizacao] = useState<number>(Date.now());
+  const [refreshing, setRefreshing] = useState(false);
+  const mountedRef = useRef(true);
 
   const empresaFixa = user?.telas.includes('status')
     ? (user.telas.includes('dashboard-alinare') || user.telas.includes('formulario-alinare') || user.telas.includes('lista-alinare')
@@ -20,30 +25,53 @@ export default function StatusPage() {
           : undefined)
     : undefined;
 
-  useEffect(() => {
-    async function carregar() {
-      setIsLoading(true);
-      try {
-        const dados = await apiService.getSolicitacoes({
-          empresa: empresaFixa,
-        });
+  const carregar = useCallback(async (isPoll = false) => {
+    if (!mountedRef.current) return;
+    if (isPoll) setRefreshing(true);
+    else setIsLoading(true);
+    try {
+      const dados = await apiService.getSolicitacoes({ empresa: empresaFixa });
+      if (mountedRef.current) {
         setSolicitacoes(dados);
-      } catch (err) {
-        console.error(err);
-      } finally {
+        setUltimaAtualizacao(Date.now());
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      if (mountedRef.current) {
         setIsLoading(false);
+        setRefreshing(false);
       }
     }
-    carregar();
-  }, [user, empresaFixa]);
+  }, [empresaFixa]);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    carregar(false);
+
+    const id = setInterval(() => carregar(true), POLLING_MS);
+    return () => {
+      mountedRef.current = false;
+      clearInterval(id);
+    };
+  }, [carregar]);
+
+  // Tick para mostrar "atualizado há Xs"
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const segundosAtras = Math.floor((Date.now() - ultimaAtualizacao) / 1000);
+  const ultimaAtualizacaoLabel =
+    segundosAtras < 5 ? 'Atualizado agora' : `Atualizado há ${segundosAtras}s`;
 
   const dadosFiltrados = useMemo(() => {
     return solicitacoes.filter((s) => {
-      // Filtro de status
       if (filtroStatus === 'concluido' && !s.resolvido) return false;
       if (filtroStatus === 'andamento' && s.resolvido) return false;
 
-      // Filtro de busca
       if (busca) {
         const termo = busca.toLowerCase();
         const matches =
@@ -62,9 +90,9 @@ export default function StatusPage() {
   };
 
   const tema =
-    user?.perfil === 'Alinare'
-      ? { badgeBg: 'bg-[#2B2D42]', text: 'text-[#2B2D42]', ring: 'focus:ring-[#2B2D42]/30' }
-      : { badgeBg: 'bg-[#A67B7B]', text: 'text-[#A67B7B]', ring: 'focus:ring-[#A67B7B]/30' };
+    empresaFixa === 'Alinare'
+      ? { text: 'text-[#2B2D42]', ring: 'focus:ring-[#2B2D42]/30' }
+      : { text: 'text-[#A67B7B]', ring: 'focus:ring-[#A67B7B]/30' };
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -73,6 +101,9 @@ export default function StatusPage() {
           <h1 className={`text-2xl font-bold ${tema.text}`}>Minhas Solicitações</h1>
           <p className="text-sm text-slate-500 mt-1">Acompanhe o status das solicitações enviadas</p>
         </div>
+        <span className="text-xs text-slate-400 hidden sm:inline">
+          {ultimaAtualizacaoLabel}
+        </span>
       </div>
 
       <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row gap-4">
@@ -186,4 +217,3 @@ export default function StatusPage() {
     </div>
   );
 }
-
