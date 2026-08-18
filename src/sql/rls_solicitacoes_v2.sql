@@ -1,12 +1,14 @@
 -- ============================================================
 -- RLS v2: Row Level Security para solicitacoes_reverso (telas-based)
 -- Substitui rls_solicitacoes.sql - usa array `telas` em vez de `perfil`
+-- Execute via: DATABASE_URL="..." node run-sql-rls.cjs
 -- ============================================================
 
 -- 1. Habilita RLS na tabela (idempotente)
 ALTER TABLE solicitacoes_reverso ENABLE ROW LEVEL SECURITY;
 
 -- 2. Helper: extrai array de telas do usuário logado (do JWT user_metadata)
+--    user_metadata.telas é um jsonb array; usamos jsonb_array_elements_text para cast seguro.
 CREATE OR REPLACE FUNCTION public.current_telas()
 RETURNS TEXT[]
 LANGUAGE sql
@@ -14,7 +16,11 @@ STABLE
 SECURITY DEFINER
 AS $$
   SELECT COALESCE(
-    (auth.jwt() -> 'user_metadata' -> 'telas')::TEXT[],
+    ARRAY(
+      SELECT jsonb_array_elements_text(
+        COALESCE(auth.jwt() -> 'user_metadata' -> 'telas', '[]'::jsonb)
+      )
+    ),
     '{}'::TEXT[]
   );
 $$;
@@ -26,7 +32,7 @@ LANGUAGE sql
 STABLE
 SECURITY DEFINER
 AS $$
-  SELECT tela = ANY(public.current_telas());
+  SELECT public.current_telas() @> ARRAY[tela];
 $$;
 
 -- 4. Helper: verifica se é admin (tem tela 'usuarios')
@@ -36,13 +42,11 @@ LANGUAGE sql
 STABLE
 SECURITY DEFINER
 AS $$
-  SELECT 'usuarios' = ANY(public.current_telas());
+  SELECT public.current_telas() @> ARRAY['usuarios'];
 $$;
 
 -- 5. Helper: determina escopo de empresa pelas telas do usuário
--- Retorna NULL se admin (acesso total) ou se tem telas gerais/ambas
--- Retorna 'Alinare' se só tem telas Alinare
--- Retorna 'Novitah' se só tem telas Novitah
+--    NULL = acesso a todas (admin ou telas gerais)
 CREATE OR REPLACE FUNCTION public.current_empresa_scope()
 RETURNS TEXT
 LANGUAGE sql
@@ -51,20 +55,13 @@ SECURITY DEFINER
 AS $$
   SELECT CASE
     WHEN public.is_admin() THEN NULL
-    WHEN 'dashboard-geral' = ANY(public.current_telas())
-      OR 'lista-geral' = ANY(public.current_telas())
-      OR ('dashboard-alinare' = ANY(public.current_telas()) AND 'dashboard-novitah' = ANY(public.current_telas()))
-      OR ('formulario-alinare' = ANY(public.current_telas()) AND 'formulario-novitah' = ANY(public.current_telas()))
-      OR ('lista-alinare' = ANY(public.current_telas()) AND 'lista-novitah' = ANY(public.current_telas()))
-    THEN NULL  -- tem acesso a ambas empresas
-    WHEN 'dashboard-alinare' = ANY(public.current_telas())
-      OR 'formulario-alinare' = ANY(public.current_telas())
-      OR 'lista-alinare' = ANY(public.current_telas())
-      OR 'status' = ANY(public.current_telas())  -- status segue empresa do form/lista
+    WHEN public.current_telas() @> ARRAY['dashboard-geral', 'lista-geral']
+    THEN NULL  -- tem telas de ambas
+    WHEN public.current_telas() @> ARRAY['dashboard-alinare']
+      OR public.current_telas() @> ARRAY['lista-alinare']
     THEN 'Alinare'
-    WHEN 'dashboard-novitah' = ANY(public.current_telas())
-      OR 'formulario-novitah' = ANY(public.current_telas())
-      OR 'lista-novitah' = ANY(public.current_telas())
+    WHEN public.current_telas() @> ARRAY['dashboard-novitah']
+      OR public.current_telas() @> ARRAY['lista-novitah']
     THEN 'Novitah'
     ELSE NULL
   END;
@@ -76,8 +73,8 @@ CREATE POLICY "select_solicitacoes_por_escopo"
   ON solicitacoes_reverso
   FOR SELECT
   USING (
-    public.current_empresa_scope() IS NULL                  -- admin ou ambas: tudo
-    OR empresa = public.current_empresa_scope()             -- demais: só sua empresa
+    public.current_empresa_scope() IS NULL
+    OR empresa = public.current_empresa_scope()
   );
 
 -- 7. Policy INSERT: usuário só cria registros da sua empresa
@@ -90,16 +87,14 @@ CREATE POLICY "insert_solicitacoes_por_escopo"
     OR empresa = public.current_empresa_scope()
   );
 
--- 8. Policy UPDATE: admin e expedicao (tem lista-geral) atualizam
+-- 8. Policy UPDATE: admin ou quem tem tela de lista pode atualizar
 DROP POLICY IF EXISTS "update_solicitacoes_admins" ON solicitacoes_reverso;
 CREATE POLICY "update_solicitacoes_admins"
   ON solicitacoes_reverso
   FOR UPDATE
   USING (
     public.is_admin()
-    OR public.has_tela('lista-geral')  -- Expedicao
-    OR public.has_tela('lista-alinare')
-    OR public.has_tela('lista-novitah')
+    OR public.current_telas() @> ARRAY['lista-geral', 'lista-alinare', 'lista-novitah']
   );
 
 -- 9. Policy DELETE: só admin remove registros

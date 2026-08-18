@@ -17,13 +17,13 @@ export default function StatusPage() {
   const [refreshing, setRefreshing] = useState(false);
   const mountedRef = useRef(true);
 
-  const empresaFixa = user?.telas.includes('status')
-    ? (user.telas.includes('dashboard-alinare') || user.telas.includes('formulario-alinare') || user.telas.includes('lista-alinare')
-        ? 'Alinare'
-        : user.telas.includes('dashboard-novitah') || user.telas.includes('formulario-novitah') || user.telas.includes('lista-novitah')
-          ? 'Novitah'
-          : undefined)
-    : undefined;
+  // Admin (tem tela 'usuarios') ou quem tem acesso a ambas empresas → vê tudo
+  const ehAdmin = user?.telas.includes('usuarios');
+  const soloAlinare = !ehAdmin && (user?.telas.includes('dashboard-alinare') || user?.telas.includes('formulario-alinare') || user?.telas.includes('lista-alinare'));
+  const soloNovitah = !ehAdmin && (user?.telas.includes('dashboard-novitah') || user?.telas.includes('formulario-novitah') || user?.telas.includes('lista-novitah'));
+
+  const empresaFixa: 'Alinare' | 'Novitah' | undefined =
+    soloAlinare ? 'Alinare' : soloNovitah ? 'Novitah' : undefined;
 
   const carregar = useCallback(async (isPoll = false) => {
     if (!mountedRef.current) return;
