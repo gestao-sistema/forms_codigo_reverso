@@ -1,6 +1,6 @@
 // ── Supabase Edge Function: Admin Usuários ─────────────────────────────────────
 // Gerencia CRUD no auth.users via supabase.auth.admin. Requer service_role.
-// Protegido: valida se o chamador possui perfil 'ADMIN' no metadata do JWT.
+// Protegido: valida se o chamador possui tela 'usuarios' no metadata do JWT.
 // Execução: Deno (Edge Runtime)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -11,6 +11,28 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Telas válidas
+const TELAS_VALIDAS = [
+  'dashboard-geral',
+  'dashboard-alinare',
+  'dashboard-novitah',
+  'formulario-alinare',
+  'formulario-novitah',
+  'lista-geral',
+  'lista-alinare',
+  'lista-novitah',
+  'status',
+  'usuarios',
+];
+
+function normalizarTelas(telas: string[]): string[] {
+  return telas.filter((t) => TELAS_VALIDAS.includes(t));
+}
+
+function ehAdmin(telas: string[]): boolean {
+  return telas.includes('usuarios');
+}
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -27,12 +49,13 @@ serve(async (req: Request) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    // 1. Validar identidade e perfil do chamador (caller)
+    // 1. Validar identidade e telas do chamador (caller)
     const { data: { user: caller }, error: callerError } = await supabaseClient.auth.getUser();
     if (callerError || !caller) throw new Error('Acesso negado: token inválido.');
 
-    if (caller.user_metadata?.perfil !== 'ADMIN') {
-      throw new Error('Acesso negado: requer perfil ADMIN.');
+    const callerTelas = caller.user_metadata?.telas ?? [];
+    if (!ehAdmin(callerTelas)) {
+      throw new Error('Acesso negado: requer permissão de administração (tela "usuarios").');
     }
 
     // 2. Cliente com service_role para operar no auth.admin
@@ -52,8 +75,8 @@ serve(async (req: Request) => {
         email_confirm: true,
         user_metadata: {
           nome: payload.nome,
-          perfil: payload.perfil,
-          usuario: payload.usuario.toLowerCase()
+          usuario: payload.usuario.toLowerCase(),
+          telas: normalizarTelas(payload.telas ?? []),
         }
       });
       if (error) throw error;
@@ -62,19 +85,19 @@ serve(async (req: Request) => {
 
     if (action === 'update') {
       // payload.id é o user_id no auth.users
-      const { id, nome, perfil, usuario, senha } = payload;
+      const { id, nome, telas, usuario, senha } = payload;
 
-      // Protege o administrador padrão (login 'admin'): login/perfil imutáveis
+      // Protege o administrador padrão (login 'admin'): login/telas imutáveis
       const { data: alvoAtual, error: alvoError } = await supabaseAdmin.auth.admin.getUserById(id);
       if (alvoError) throw alvoError;
       const loginAtual = alvoAtual.user?.user_metadata?.usuario;
-      if (loginAtual === 'admin' && (usuario || perfil)) {
-        throw new Error('Não é possível alterar login ou perfil do administrador padrão.');
+      if (loginAtual === 'admin' && (usuario || telas)) {
+        throw new Error('Não é possível alterar login ou telas do administrador padrão.');
       }
 
       const updateData: any = { user_metadata: {} };
       if (nome) updateData.user_metadata.nome = nome;
-      if (perfil) updateData.user_metadata.perfil = perfil;
+      if (telas) updateData.user_metadata.telas = normalizarTelas(telas);
       if (usuario) {
         updateData.user_metadata.usuario = usuario.toLowerCase();
         updateData.email = `${usuario.toLowerCase()}@cr.internal`;
@@ -102,7 +125,7 @@ serve(async (req: Request) => {
         id: u.id,
         nome: u.user_metadata?.nome,
         usuario: u.user_metadata?.usuario,
-        perfil: u.user_metadata?.perfil
+        telas: u.user_metadata?.telas ?? [],
       })).sort((a, b) => a.nome.localeCompare(b.nome));
 
       return new Response(JSON.stringify({ data: usuarios }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });

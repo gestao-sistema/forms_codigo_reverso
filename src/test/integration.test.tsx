@@ -30,6 +30,7 @@ vi.mock('../services/authService', () => ({
     criarUsuario: vi.fn(),
     atualizarUsuario: vi.fn(),
     removerUsuario: vi.fn(),
+    alterarSenha: vi.fn(),
   },
   AuthError: class AuthError extends Error {},
 }));
@@ -68,7 +69,7 @@ import { AuthError } from '../services/authService';
 
 function renderWithAuth(
   ui: React.ReactNode,
-  sessao: null | { id: string; nome: string; usuario: string; perfil: string } = null
+  sessao: null | { id: string; nome: string; usuario: string; telas: string[] } = null
 ) {
   (authService.getSessao as ReturnType<typeof vi.fn>).mockResolvedValue(sessao);
   (authService.onMudancaSessao as ReturnType<typeof vi.fn>).mockReturnValue(() => {});
@@ -82,8 +83,8 @@ function renderWithAuth(
   );
 }
 
-const sessaoAdmin = { id: '1', nome: 'Admin', usuario: 'admin', perfil: 'ADMIN' };
-const sessaoAlinare = { id: '2', nome: 'Alinare User', usuario: 'alinare', perfil: 'Alinare' };
+const sessaoAdmin = { id: '1', nome: 'Admin', usuario: 'admin', telas: ['usuarios', 'dashboard-geral', 'formulario-alinare'] };
+const sessaoAlinare = { id: '2', nome: 'Alinare User', usuario: 'alinare', telas: ['dashboard-alinare', 'formulario-alinare', 'status'] };
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -108,24 +109,34 @@ describe('ProtectedRoute', () => {
 
   it('perfil não autorizado: redireciona e não renderiza children', async () => {
     renderWithAuth(
-      <ProtectedRoute roles={['ADMIN', 'Expedicao']}>
-        <div>só admin/expedicao</div>
+      <ProtectedRoute telas={['dashboard-geral']}>
+        <div>só dashboard geral</div>
       </ProtectedRoute>,
-      sessaoAlinare
+      sessaoAlinare // tem dashboard-alinare, mas não dashboard-geral
     );
     await waitFor(() => {
-      expect(screen.queryByText('só admin/expedicao')).not.toBeInTheDocument();
+      expect(screen.queryByText('só dashboard geral')).not.toBeInTheDocument();
     });
   });
 
   it('perfil autorizado: renderiza children', async () => {
     renderWithAuth(
-      <ProtectedRoute roles={['ADMIN']}>
-        <div>só admin</div>
+      <ProtectedRoute telas={['dashboard-alinare']}>
+        <div>só dashboard alinare</div>
+      </ProtectedRoute>,
+      sessaoAlinare
+    );
+    expect(await screen.findByText('só dashboard alinare')).toBeInTheDocument();
+  });
+
+  it('admin (tela usuarios) acessa qualquer rota', async () => {
+    renderWithAuth(
+      <ProtectedRoute telas={['dashboard-geral']}>
+        <div>admin pode entrar</div>
       </ProtectedRoute>,
       sessaoAdmin
     );
-    expect(await screen.findByText('só admin')).toBeInTheDocument();
+    expect(await screen.findByText('admin pode entrar')).toBeInTheDocument();
   });
 });
 

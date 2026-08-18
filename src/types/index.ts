@@ -91,8 +91,46 @@ export interface FiltrosSolicitacoes {
 
 // ── Autenticação e perfis de acesso ──────────────────────────────────────────
 
-/** Perfis de acesso do sistema. `Expedicao` sem cedilha em código; label "Expedição". */
-export type Perfil = 'ADMIN' | 'Alinare' | 'Novitah' | 'Expedicao';
+/** Telas do sistema que podem ser autorizadas individualmente. */
+export type Tela =
+  | 'dashboard-geral'
+  | 'dashboard-alinare'
+  | 'dashboard-novitah'
+  | 'formulario-alinare'
+  | 'formulario-novitah'
+  | 'lista-geral'
+  | 'lista-alinare'
+  | 'lista-novitah'
+  | 'status'
+  | 'usuarios';
+
+/** Todas as telas disponíveis para seleção no cadastro. */
+export const TELAS: Tela[] = [
+  'dashboard-geral',
+  'dashboard-alinare',
+  'dashboard-novitah',
+  'formulario-alinare',
+  'formulario-novitah',
+  'lista-geral',
+  'lista-alinare',
+  'lista-novitah',
+  'status',
+  'usuarios',
+];
+
+/** Label de exibição de cada tela. */
+export const TELA_LABEL: Record<Tela, string> = {
+  'dashboard-geral': 'Dashboard Geral',
+  'dashboard-alinare': 'Dashboard Alinare',
+  'dashboard-novitah': 'Dashboard Novitah',
+  'formulario-alinare': 'Formulário Alinare',
+  'formulario-novitah': 'Formulário Novitah',
+  'lista-geral': 'Lista Geral',
+  'lista-alinare': 'Lista Alinare',
+  'lista-novitah': 'Lista Novitah',
+  status: 'Status',
+  usuarios: 'Usuários (admin)',
+};
 
 /** Usuário do sistema (Supabase Auth). Senha NÃO armazenada no client. */
 export interface Usuario {
@@ -100,7 +138,8 @@ export interface Usuario {
   nome: string;
   /** Login único (username) */
   usuario: string;
-  perfil: Perfil;
+  /** Telas que o usuário pode acessar. */
+  telas: Tela[];
 }
 
 /** Usuário autenticado exposto pela sessão — nunca carrega senha. */
@@ -112,18 +151,15 @@ export type CreateUsuarioPayload = Omit<Usuario, 'id'> & { senha?: string };
 /** Payload para atualização de usuário */
 export type UpdateUsuarioPayload = Partial<Usuario> & { senha?: string };
 
-/** Escopo de empresa por perfil. `null` = ambas (ADMIN, Expedicao). */
-export const ESCOPO_EMPRESA: Record<Perfil, Empresa | null> = {
-  ADMIN: null,
-  Expedicao: null,
-  Alinare: 'Alinare',
-  Novitah: 'Novitah',
-};
+/** true se o usuário tem permissão de gestão (tela de usuários). */
+export function isAdmin(u: Pick<Usuario, 'telas'>): boolean {
+  return u.telas.includes('usuarios');
+}
 
-/** Label de exibição do perfil */
-export const PERFIL_LABEL: Record<Perfil, string> = {
-  ADMIN: 'Administrador',
-  Alinare: 'Alinare',
-  Novitah: 'Novitah',
-  Expedicao: 'Expedição',
+/** Mapeamento legado: perfil antigo → telas equivalentes (migração). */
+export const LEGADO_PERFIL_TELAS: Record<string, Tela[]> = {
+  ADMIN: [...TELAS],
+  Alinare: ['dashboard-alinare', 'formulario-alinare', 'lista-alinare', 'status'],
+  Novitah: ['dashboard-novitah', 'formulario-novitah', 'lista-novitah', 'status'],
+  Expedicao: ['dashboard-geral', 'lista-geral'],
 };

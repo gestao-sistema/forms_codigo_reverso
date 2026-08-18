@@ -12,12 +12,20 @@ export default function StatusPage() {
   const [filtroStatus, setFiltroStatus] = useState<'todos' | 'concluido' | 'andamento'>('todos');
   const [expandidoId, setExpandidoId] = useState<string | null>(null);
 
+  const empresaFixa = user?.telas.includes('status')
+    ? (user.telas.includes('dashboard-alinare') || user.telas.includes('formulario-alinare') || user.telas.includes('lista-alinare')
+        ? 'Alinare'
+        : user.telas.includes('dashboard-novitah') || user.telas.includes('formulario-novitah') || user.telas.includes('lista-novitah')
+          ? 'Novitah'
+          : undefined)
+    : undefined;
+
   useEffect(() => {
     async function carregar() {
       setIsLoading(true);
       try {
         const dados = await apiService.getSolicitacoes({
-          empresa: user?.perfil === 'Alinare' || user?.perfil === 'Novitah' ? user.perfil : undefined,
+          empresa: empresaFixa,
         });
         setSolicitacoes(dados);
       } catch (err) {
@@ -27,7 +35,7 @@ export default function StatusPage() {
       }
     }
     carregar();
-  }, [user]);
+  }, [user, empresaFixa]);
 
   const dadosFiltrados = useMemo(() => {
     return solicitacoes.filter((s) => {

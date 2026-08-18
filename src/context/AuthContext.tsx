@@ -10,6 +10,7 @@ interface AuthContextValue {
   isLoading: boolean;
   login: (usuario: string, senha: string) => Promise<UsuarioAutenticado>;
   logout: () => Promise<void>;
+  alterarSenha: (novaSenha: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -51,6 +52,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async logout() {
         await authService.logout();
         setUser(null);
+      },
+      async alterarSenha(novaSenha) {
+        await authService.alterarSenha(novaSenha);
       },
     }),
     [user, isLoading]

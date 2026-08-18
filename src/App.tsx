@@ -4,7 +4,7 @@ import { Toaster } from 'react-hot-toast';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
-import { homeDoPerfil } from './lib/perfil';
+import { homeDoUsuario } from './lib/perfil';
 
 import LoginPage from './pages/LoginPage';
 import AlinareFormPage from './pages/AlinareFormPage';
@@ -16,11 +16,11 @@ import ListPage from './pages/ListPage';
 import StatusPage from './pages/StatusPage';
 import UsuariosPage from './pages/UsuariosPage';
 
-/** Redireciona a raiz para a home do perfil (ou login). */
+/** Redireciona a raiz para a home do usuário (ou login). */
 function RaizRedirect() {
   const { user, isLoading } = useAuth();
   if (isLoading) return null;
-  return <Navigate to={user ? homeDoPerfil(user.perfil) : '/login'} replace />;
+  return <Navigate to={user ? homeDoUsuario(user) : '/login'} replace />;
 }
 
 export default function App() {
@@ -58,7 +58,7 @@ export default function App() {
             <Route
               path="dashboard"
               element={
-                <ProtectedRoute roles={['ADMIN', 'Expedicao', 'Alinare', 'Novitah']}>
+                <ProtectedRoute telas={['dashboard-geral', 'dashboard-alinare', 'dashboard-novitah']}>
                   <DashboardPage />
                 </ProtectedRoute>
               }
@@ -66,7 +66,7 @@ export default function App() {
             <Route
               path="lista"
               element={
-                <ProtectedRoute roles={['ADMIN', 'Expedicao']}>
+                <ProtectedRoute telas={['lista-geral', 'lista-alinare', 'lista-novitah']}>
                   <ListPage />
                 </ProtectedRoute>
               }
@@ -74,7 +74,7 @@ export default function App() {
             <Route
               path="status"
               element={
-                <ProtectedRoute roles={['Alinare', 'Novitah']}>
+                <ProtectedRoute telas={['status']}>
                   <StatusPage />
                 </ProtectedRoute>
               }
@@ -82,7 +82,7 @@ export default function App() {
             <Route
               path="usuarios"
               element={
-                <ProtectedRoute roles={['ADMIN']}>
+                <ProtectedRoute telas={['usuarios']}>
                   <UsuariosPage />
                 </ProtectedRoute>
               }
@@ -90,7 +90,7 @@ export default function App() {
             <Route
               path="alinare"
               element={
-                <ProtectedRoute roles={['Alinare', 'ADMIN']}>
+                <ProtectedRoute telas={['formulario-alinare']}>
                   <AlinareFormPage />
                 </ProtectedRoute>
               }
@@ -98,7 +98,7 @@ export default function App() {
             <Route
               path="novitah"
               element={
-                <ProtectedRoute roles={['Novitah', 'ADMIN']}>
+                <ProtectedRoute telas={['formulario-novitah']}>
                   <NovitahFormPage />
                 </ProtectedRoute>
               }

@@ -10,7 +10,7 @@ import {
   porAutorizador,
 } from '../services/analytics';
 import { useAuth } from '../context/AuthContext';
-import { ESCOPO_EMPRESA, type FiltrosSolicitacoes } from '../types';
+import { type FiltrosSolicitacoes } from '../types';
 
 import SummaryCards from '../components/admin/SummaryCards';
 import DashboardFilters, {
@@ -27,9 +27,19 @@ import ChartAutorizador from '../components/admin/ChartAutorizador';
 const POLLING_MS = 15_000;
 
 export default function DashboardPage() {
-  // Trava o filtro de empresa conforme o perfil logado
+  // Trava o filtro de empresa conforme acesso
   const { user } = useAuth();
-  const empresaFixa = user ? ESCOPO_EMPRESA[user.perfil] : null;
+
+  // Se o usuário não tem acesso ao dashboard geral, fixamos na empresa q ele tem acesso
+  const temGeral = user?.telas.includes('dashboard-geral');
+  const temAlinare = user?.telas.includes('dashboard-alinare');
+  const temNovitah = user?.telas.includes('dashboard-novitah');
+
+  let empresaFixa: 'Alinare' | 'Novitah' | null = null;
+  if (!temGeral) {
+    if (temAlinare && !temNovitah) empresaFixa = 'Alinare';
+    if (temNovitah && !temAlinare) empresaFixa = 'Novitah';
+  }
 
   // Estado dos filtros da UI
   const [filtros, setFiltros] = useState<FiltrosState>({

@@ -2,7 +2,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useSolicitacoes } from '../hooks/useSolicitacoes';
-import { ESCOPO_EMPRESA, type FiltrosSolicitacoes, type Solicitacao } from '../types';
+import { isAdmin, type FiltrosSolicitacoes, type Solicitacao } from '../types';
 import { useAuth } from '../context/AuthContext';
 import apiService from '../services/apiService';
 
@@ -14,9 +14,18 @@ import RecordDetailModal from '../components/admin/RecordDetailModal';
 const POLLING_MS = 15_000;
 
 export default function ListPage() {
-  // Trava o filtro de empresa conforme o perfil logado
+  // Trava o filtro de empresa conforme acesso
   const { user } = useAuth();
-  const empresaFixa = user ? ESCOPO_EMPRESA[user.perfil] : null;
+
+  const temGeral = user?.telas.includes('lista-geral');
+  const temAlinare = user?.telas.includes('lista-alinare');
+  const temNovitah = user?.telas.includes('lista-novitah');
+
+  let empresaFixa: 'Alinare' | 'Novitah' | null = null;
+  if (!temGeral) {
+    if (temAlinare && !temNovitah) empresaFixa = 'Alinare';
+    if (temNovitah && !temAlinare) empresaFixa = 'Novitah';
+  }
 
   // ── Filtros globais (topo) ──
   const [filtros, setFiltros] = useState<FiltrosState>({
@@ -157,7 +166,7 @@ export default function ListPage() {
           loading={loading}
           onClickRow={setSelectedRecord}
           onToggleStatus={handleToggleStatus}
-          showDelete={user?.perfil === 'ADMIN'}
+          showDelete={user ? isAdmin(user) : false}
           onDelete={handleDelete}
         />
       </div>

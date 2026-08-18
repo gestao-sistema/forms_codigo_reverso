@@ -4,42 +4,19 @@ import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import Sidebar from './Sidebar';
-import { useAuth } from '../../context/AuthContext';
+import PerfilButton from '../auth/PerfilButton';
 
 export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { user } = useAuth();
-
-  // Customização de fundo de tela e cabeçalho conforme perfil
-  const bgLayout =
-    user?.perfil === 'Alinare'
-      ? 'bg-[#F8F9FA]' // Cinza frio Alinare
-      : user?.perfil === 'Novitah'
-      ? 'bg-[#FDF8F7]' // Rose quente suave Novitah
-      : 'bg-slate-100'; // Default admin
-
-  const textHeader =
-    user?.perfil === 'Alinare'
-      ? 'text-[#2B2D42]'
-      : user?.perfil === 'Novitah'
-      ? 'text-[#A67B7B]'
-      : 'text-slate-800';
-
-  const labelPainel =
-    user?.perfil === 'Alinare'
-      ? 'Painel Alinare'
-      : user?.perfil === 'Novitah'
-      ? 'Painel Novitah'
-      : 'Painel Reverso';
 
   return (
-    <div className={`min-h-screen ${bgLayout} transition-colors duration-200`}>
+    <div className="min-h-screen bg-slate-100 transition-colors duration-200">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       {/* Área de conteúdo — deslocada à direita da sidebar no desktop */}
       <div className="lg:ml-64">
 
-        {/* Topbar mobile com botão de menu */}
+        {/* Topbar mobile */}
         <header className="lg:hidden sticky top-0 z-20 bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-3">
           <button
             type="button"
@@ -49,7 +26,12 @@ export default function AdminLayout() {
           >
             <Menu className="w-5 h-5 text-slate-700" />
           </button>
-          <span className={`font-semibold ${textHeader}`}>{labelPainel}</span>
+          <span className="font-semibold text-slate-800">GLR</span>
+        </header>
+
+        {/* Topbar desktop com PerfilButton */}
+        <header className="hidden lg:flex items-center justify-end px-8 py-4">
+          <PerfilButton />
         </header>
 
         {/* Conteúdo das páginas */}

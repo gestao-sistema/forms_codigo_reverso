@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { LogIn, Loader2, PackageOpen } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { homeDoPerfil } from '../lib/perfil';
+import { homeDoUsuario } from '../lib/perfil';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -21,7 +21,7 @@ export default function LoginPage() {
     try {
       const sessao = await login(usuario, senha);
       toast.success(`Bem-vindo, ${sessao.nome}.`);
-      navigate(homeDoPerfil(sessao.perfil), { replace: true });
+      navigate(homeDoUsuario(sessao), { replace: true });
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Falha ao entrar.';
       setErro(msg);

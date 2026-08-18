@@ -7,7 +7,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { supabase } from '../lib/supabase';
-import type { Usuario, UsuarioAutenticado, CreateUsuarioPayload, UpdateUsuarioPayload } from '../types';
+import { LEGADO_PERFIL_TELAS } from '../types';
+import type { Usuario, UsuarioAutenticado, CreateUsuarioPayload, UpdateUsuarioPayload, Tela } from '../types';
 
 export class AuthError extends Error {}
 
@@ -22,9 +23,21 @@ export interface IAuthService {
   criarUsuario(data: CreateUsuarioPayload): Promise<Usuario>;
   atualizarUsuario(id: string, data: UpdateUsuarioPayload): Promise<Usuario>;
   removerUsuario(id: string): Promise<void>;
+  /** Altera a própria senha (usuário logado). */
+  alterarSenha(novaSenha: string): Promise<void>;
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Normaliza telas vindas do metadata. Se vier `perfil` legado (sem `telas`),
+ * migra para as telas equivalentes.
+ */
+function normalizarTelas(md: Record<string, any> = {}): Tela[] {
+  if (Array.isArray(md.telas) && md.telas.length > 0) return md.telas as Tela[];
+  const legado = md.perfil ?? 'Alinare';
+  return LEGADO_PERFIL_TELAS[legado] ?? LEGADO_PERFIL_TELAS.Alinare;
+}
 
 /** Converte User do Supabase em UsuarioAutenticado (shape mantido para a app) */
 function toSession(u: any): UsuarioAutenticado {
@@ -32,7 +45,7 @@ function toSession(u: any): UsuarioAutenticado {
     id: u.id,
     nome: u.user_metadata?.nome ?? u.email,
     usuario: u.user_metadata?.usuario ?? u.email?.split('@')[0],
-    perfil: u.user_metadata?.perfil ?? 'Alinare',
+    telas: normalizarTelas(u.user_metadata),
   } as UsuarioAutenticado;
 }
 
@@ -41,7 +54,7 @@ function toUsuario(u: any): Usuario {
     id: u.id,
     nome: u.user_metadata?.nome ?? u.nome ?? '',
     usuario: u.user_metadata?.usuario ?? u.usuario ?? '',
-    perfil: u.user_metadata?.perfil ?? u.perfil ?? 'Alinare',
+    telas: normalizarTelas(u.user_metadata ?? u),
   };
 }
 
@@ -101,7 +114,7 @@ const authService: IAuthService = {
   async atualizarUsuario(id, data: UpdateUsuarioPayload) {
     const payload: any = { id };
     if (data.nome) payload.nome = data.nome;
-    if (data.perfil) payload.perfil = data.perfil;
+    if (data.telas) payload.telas = data.telas;
     if (data.usuario) payload.usuario = data.usuario.trim().toLowerCase();
     if (data.senha) payload.senha = data.senha;
 
@@ -118,6 +131,16 @@ const authService: IAuthService = {
       body: { action: 'delete', payload: { id } },
     });
 
+    if (error) throw new AuthError(error.message);
+  },
+
+  async alterarSenha(novaSenha) {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session?.user) throw new AuthError('Sessão expirada. Faça login novamente.');
+
+    const { error } = await supabase.auth.updateUser({ password: novaSenha });
     if (error) throw new AuthError(error.message);
   },
 };

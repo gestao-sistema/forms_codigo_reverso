@@ -2,16 +2,17 @@
 import type { ReactNode } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { homeDoPerfil } from '../../lib/perfil';
-import type { Perfil } from '../../types';
+import { homeDoUsuario } from '../../lib/perfil';
+import type { Tela } from '../../types';
+import { isAdmin } from '../../types';
 
 interface ProtectedRouteProps {
-  /** Perfis autorizados. Ausente = qualquer usuário logado. */
-  roles?: Perfil[];
+  /** Telas autorizadas para a rota. Ausente = qualquer usuário logado. */
+  telas?: Tela[];
   children?: ReactNode;
 }
 
-export default function ProtectedRoute({ roles, children }: ProtectedRouteProps) {
+export default function ProtectedRoute({ telas, children }: ProtectedRouteProps) {
   const { user, isLoading } = useAuth();
 
   // Evita flicker enquanto restaura sessão
@@ -25,8 +26,14 @@ export default function ProtectedRoute({ roles, children }: ProtectedRouteProps)
 
   if (!user) return <Navigate to="/login" replace />;
 
-  if (roles && !roles.includes(user.perfil)) {
-    return <Navigate to={homeDoPerfil(user.perfil)} replace />;
+  if (telas && telas.length > 0) {
+    // Admin tem acesso a tudo
+    if (isAdmin(user)) return children ? <>{children}</> : <Outlet />;
+
+    const temAcesso = telas.some((t) => user.telas.includes(t));
+    if (!temAcesso) {
+      return <Navigate to={homeDoUsuario(user)} replace />;
+    }
   }
 
   return children ? <>{children}</> : <Outlet />;

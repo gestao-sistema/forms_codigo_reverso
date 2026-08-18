@@ -7,6 +7,7 @@ vi.mock('../lib/supabase', () => ({
       signOut: vi.fn(),
       getSession: vi.fn(),
       onAuthStateChange: vi.fn(),
+      updateUser: vi.fn(),
     },
     functions: {
       invoke: vi.fn(),
@@ -20,7 +21,7 @@ import authService, { AuthError } from '../services/authService';
 const mockUser = {
   id: 'uuid-1',
   email: 'admin@cr.internal',
-  user_metadata: { nome: 'Administrador', usuario: 'admin', perfil: 'ADMIN' },
+  user_metadata: { nome: 'Administrador', usuario: 'admin', telas: ['usuarios', 'dashboard-geral'] },
 };
 
 beforeEach(() => {
@@ -44,7 +45,7 @@ describe('authService.login', () => {
       id: 'uuid-1',
       nome: 'Administrador',
       usuario: 'admin',
-      perfil: 'ADMIN',
+      telas: ['usuarios', 'dashboard-geral'],
     });
   });
 
@@ -79,15 +80,30 @@ describe('authService.getSessao', () => {
       id: 'uuid-1',
       nome: 'Administrador',
       usuario: 'admin',
-      perfil: 'ADMIN',
+      telas: ['usuarios', 'dashboard-geral'],
     });
+  });
+});
+
+describe('authService.alterarSenha', () => {
+  it('lança erro se não tiver sessão', async () => {
+    (supabase.auth.getSession as any).mockResolvedValue({ data: { session: null } });
+    await expect(authService.alterarSenha('123456')).rejects.toThrow(AuthError);
+  });
+
+  it('chama updateUser com a nova senha', async () => {
+    (supabase.auth.getSession as any).mockResolvedValue({ data: { session: { user: mockUser } } });
+    (supabase.auth.updateUser as any).mockResolvedValue({ error: null });
+
+    await authService.alterarSenha('123456');
+    expect(supabase.auth.updateUser).toHaveBeenCalledWith({ password: '123456' });
   });
 });
 
 describe('CRUD via Edge Function', () => {
   it('listarUsuarios: invoca function', async () => {
     (supabase.functions.invoke as any).mockResolvedValue({
-      data: { data: [{ id: '1', user_metadata: { nome: 'A', usuario: 'a', perfil: 'Alinare' } }] },
+      data: { data: [{ id: '1', user_metadata: { nome: 'A', usuario: 'a', telas: ['dashboard-alinare'] } }] },
       error: null,
     });
 
@@ -97,18 +113,19 @@ describe('CRUD via Edge Function', () => {
     });
     expect(res).toHaveLength(1);
     expect(res[0].nome).toBe('A');
+    expect(res[0].telas).toEqual(['dashboard-alinare']);
   });
 
   it('criarUsuario: invoca function e formata payload', async () => {
     (supabase.functions.invoke as any).mockResolvedValue({
-      data: { data: { id: '2', user_metadata: { nome: 'N', usuario: 'n', perfil: 'ADMIN' } } },
+      data: { data: { id: '2', user_metadata: { nome: 'N', usuario: 'n', telas: ['usuarios'] } } },
       error: null,
     });
 
-    const res = await authService.criarUsuario({ nome: 'N', usuario: 'N ', senha: '123', perfil: 'ADMIN' });
+    const res = await authService.criarUsuario({ nome: 'N', usuario: 'N ', senha: '123', telas: ['usuarios'] });
 
     expect(supabase.functions.invoke).toHaveBeenCalledWith('admin-usuarios', {
-      body: { action: 'create', payload: { nome: 'N', usuario: 'n', senha: '123', perfil: 'ADMIN' } },
+      body: { action: 'create', payload: { nome: 'N', usuario: 'n', senha: '123', telas: ['usuarios'] } },
     });
     expect(res.usuario).toBe('n');
   });
@@ -119,10 +136,10 @@ describe('CRUD via Edge Function', () => {
       error: null,
     });
 
-    await authService.atualizarUsuario('uuid-1', { nome: 'Novo', usuario: ' Admin ' });
+    await authService.atualizarUsuario('uuid-1', { nome: 'Novo', usuario: ' Admin ', telas: ['dashboard-geral'] });
 
     expect(supabase.functions.invoke).toHaveBeenCalledWith('admin-usuarios', {
-      body: { action: 'update', payload: { id: 'uuid-1', nome: 'Novo', usuario: 'admin' } },
+      body: { action: 'update', payload: { id: 'uuid-1', nome: 'Novo', usuario: 'admin', telas: ['dashboard-geral'] } },
     });
   });
 
