@@ -32,21 +32,21 @@ export default function LoginPage() {
   };
 
   const inputCls =
-    'h-11 w-full px-3 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 ' +
-    'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors';
+    'h-12 w-full px-4 rounded-lg border border-slate-300 bg-white text-base sm:text-sm text-slate-900 ' +
+    'focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-colors placeholder:text-slate-400';
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100 px-4">
-      <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
-        <div className="flex flex-col items-center mb-6">
-          <div className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center mb-3">
+    <div className="min-h-dvh flex items-center justify-center bg-slate-100 px-4 py-8">
+      <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8">
+        <div className="flex flex-col items-center mb-8">
+          <div className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center mb-4">
             <PackageOpen className="w-6 h-6 text-blue-400" />
           </div>
-          <h1 className="text-xl font-bold text-slate-900">Gestão de Logística Reversa</h1>
-          <p className="text-sm text-slate-500 mt-1">Entre com suas credenciais</p>
+          <h1 className="text-xl font-bold text-slate-900 text-center leading-tight">Gestão de Logística Reversa</h1>
+          <p className="text-sm text-slate-500 mt-2">Entre com suas credenciais</p>
         </div>
 
-        <form onSubmit={onSubmit} className="space-y-4">
+        <form onSubmit={onSubmit} className="space-y-5">
           <div className="flex flex-col">
             <label htmlFor="usuario" className="text-xs font-medium text-slate-500 mb-1">
               Usuário
@@ -79,18 +79,20 @@ export default function LoginPage() {
 
           {erro && <p className="text-sm text-red-600">{erro}</p>}
 
-          <button
-            type="submit"
-            disabled={enviando}
-            className="h-11 w-full rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
-          >
-            {enviando ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <LogIn className="w-4 h-4" />
-            )}
-            Entrar
-          </button>
+          <div className="pt-2">
+            <button
+              type="submit"
+              disabled={enviando}
+              className="h-12 w-full rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 active:bg-blue-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer shadow-sm hover:shadow active:scale-[0.98]"
+            >
+              {enviando ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <LogIn className="w-5 h-5" />
+              )}
+              Entrar
+            </button>
+          </div>
         </form>
       </div>
     </div>

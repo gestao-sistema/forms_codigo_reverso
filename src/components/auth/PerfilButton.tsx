@@ -13,6 +13,7 @@ export default function PerfilButton() {
 
   const [aberto, setAberto] = useState(false);
   const [mostrarModalSenha, setMostrarModalSenha] = useState(false);
+  const [senhaAtual, setSenhaAtual] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
   const [salvando, setSalvando] = useState(false);
@@ -36,6 +37,7 @@ export default function PerfilButton() {
 
   const abrirModal = () => {
     setAberto(false);
+    setSenhaAtual('');
     setNovaSenha('');
     setConfirmarSenha('');
     setMostrarModalSenha(true);
@@ -43,12 +45,17 @@ export default function PerfilButton() {
 
   const fecharModal = () => {
     setMostrarModalSenha(false);
+    setSenhaAtual('');
     setNovaSenha('');
     setConfirmarSenha('');
   };
 
   const onSubmitSenha = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!senhaAtual) {
+      toast.error('Informe a senha atual.');
+      return;
+    }
     if (novaSenha.length < 6) {
       toast.error('A senha deve ter pelo menos 6 caracteres.');
       return;
@@ -59,7 +66,7 @@ export default function PerfilButton() {
     }
     setSalvando(true);
     try {
-      await alterarSenha(novaSenha);
+      await alterarSenha(senhaAtual, novaSenha);
       toast.success('Senha atualizada com sucesso.');
       fecharModal();
     } catch (err) {
@@ -94,7 +101,7 @@ export default function PerfilButton() {
         </button>
 
         {aberto && (
-          <div className="absolute right-0 mt-1 w-56 bg-white rounded-xl shadow-lg border border-slate-200 py-1 z-50">
+          <div className="absolute right-0 bottom-full mb-1 w-56 bg-white rounded-xl shadow-lg border border-slate-200 py-1 z-50">
             <div className="px-4 py-2 border-b border-slate-100">
               <p className="text-sm font-semibold text-slate-900 truncate">{user.nome}</p>
               <p className="text-xs text-slate-500 truncate">@{user.usuario}</p>
@@ -128,6 +135,20 @@ export default function PerfilButton() {
             </div>
             <form onSubmit={onSubmitSenha} className="px-6 py-5 space-y-4">
               <div className="flex flex-col">
+                <label htmlFor="senha-atual" className="text-xs font-medium text-slate-500 mb-1">
+                  Senha atual
+                </label>
+                <input
+                  id="senha-atual"
+                  type="password"
+                  value={senhaAtual}
+                  onChange={(e) => setSenhaAtual(e.target.value)}
+                  className={inputCls}
+                  required
+                  autoFocus
+                />
+              </div>
+              <div className="flex flex-col">
                 <label htmlFor="nova-senha" className="text-xs font-medium text-slate-500 mb-1">
                   Nova senha
                 </label>
@@ -139,7 +160,6 @@ export default function PerfilButton() {
                   className={inputCls}
                   required
                   minLength={6}
-                  autoFocus
                 />
               </div>
               <div className="flex flex-col">

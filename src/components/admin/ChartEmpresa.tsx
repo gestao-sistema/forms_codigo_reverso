@@ -4,6 +4,7 @@ import {
   Pie,
   Cell,
   Tooltip,
+  Legend,
   ResponsiveContainer,
 } from 'recharts';
 import { type EmpresaDatum, COR_EMPRESA } from '../../services/analytics';
@@ -54,6 +55,12 @@ export default function ChartEmpresa({ data }: ChartEmpresaProps) {
             boxShadow: '0 8px 20px rgba(0,0,0,0.08)',
             fontSize: 13,
           }}
+        />
+        <Legend
+          verticalAlign="bottom"
+          height={36}
+          iconType="circle"
+          wrapperStyle={{ fontSize: '13px', color: '#475569', paddingTop: '10px' }}
         />
       </PieChart>
     </ResponsiveContainer>

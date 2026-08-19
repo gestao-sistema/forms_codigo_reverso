@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { PackageOpen, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { navItemsDoUsuario } from '../../lib/perfil';
+import PerfilButton from '../auth/PerfilButton';
 import { isAdmin } from '../../types';
 
 interface SidebarProps {
@@ -76,18 +77,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           ))}
         </nav>
 
-        {/* Mobile logout/profile info moved to PerfilButton, mas mostramos algo simplificado no mobile */}
-        <div className="lg:hidden px-4 py-4 border-t border-slate-200">
-          {user && (
-            <div className="px-2 mb-2">
-              <p className="text-sm font-medium truncate text-slate-900">{user.nome}</p>
-              {isAdmin(user) && (
-                <span className="inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-100 text-blue-700">
-                  Admin
-                </span>
-              )}
-            </div>
-          )}
+        {/* User Profile Footer */}
+        <div className="p-4 border-t border-slate-200">
+          <PerfilButton />
         </div>
       </aside>
     </>

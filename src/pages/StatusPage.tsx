@@ -2,12 +2,15 @@ import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import apiService from '../services/apiService';
 import type { Solicitacao } from '../types';
+import { useSearchParams } from 'react-router-dom';
 import { Clock, CheckCircle2, Search, Filter, ChevronDown, ChevronUp } from 'lucide-react';
 
 const POLLING_MS = 15_000;
 
 export default function StatusPage() {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const queryEmpresa = searchParams.get('empresa') as 'Alinare' | 'Novitah' | null;
   const [solicitacoes, setSolicitacoes] = useState<Solicitacao[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [busca, setBusca] = useState('');
@@ -17,13 +20,20 @@ export default function StatusPage() {
   const [refreshing, setRefreshing] = useState(false);
   const mountedRef = useRef(true);
 
-  // Admin (tem tela 'usuarios') ou quem tem acesso a ambas empresas → vê tudo
-  const ehAdmin = user?.telas.includes('usuarios');
-  const soloAlinare = !ehAdmin && (user?.telas.includes('dashboard-alinare') || user?.telas.includes('formulario-alinare') || user?.telas.includes('lista-alinare'));
-  const soloNovitah = !ehAdmin && (user?.telas.includes('dashboard-novitah') || user?.telas.includes('formulario-novitah') || user?.telas.includes('lista-novitah'));
+  // Permissão pelas telas de status específicas
+  const temStatusGeral = user?.telas.includes('status-geral');
+  const temStatusAlinare = user?.telas.includes('status-alinare');
+  const temStatusNovitah = user?.telas.includes('status-novitah');
 
-  const empresaFixa: 'Alinare' | 'Novitah' | undefined =
-    soloAlinare ? 'Alinare' : soloNovitah ? 'Novitah' : undefined;
+  // Escopo fixo: quem só tem status de UMA empresa fica travado nela.
+  let empresaFixa: 'Alinare' | 'Novitah' | null = null;
+  if (!temStatusGeral) {
+    if (temStatusAlinare && !temStatusNovitah) empresaFixa = 'Alinare';
+    if (temStatusNovitah && !temStatusAlinare) empresaFixa = 'Novitah';
+  } else if (queryEmpresa && (queryEmpresa === 'Alinare' || queryEmpresa === 'Novitah')) {
+    // Quem tem status-geral respeita query param ?empresa=
+    empresaFixa = queryEmpresa;
+  }
 
   const carregar = useCallback(async (isPoll = false) => {
     if (!mountedRef.current) return;
@@ -89,24 +99,38 @@ export default function StatusPage() {
     setExpandidoId(prev => prev === id ? null : id);
   };
 
+  // Cores por empresa
   const tema =
     empresaFixa === 'Alinare'
-      ? { text: 'text-[#2B2D42]', ring: 'focus:ring-[#2B2D42]/30' }
-      : { text: 'text-[#A67B7B]', ring: 'focus:ring-[#A67B7B]/30' };
+      ? { bg: 'bg-[#2B2D42]/10', border: 'border-[#2B2D42]/20', text: 'text-[#2B2D42]', ring: 'focus:ring-[#2B2D42]/30', badge: 'bg-[#2B2D42]/10 text-[#2B2D42] border-[#2B2D42]/20' }
+      : empresaFixa === 'Novitah'
+        ? { bg: 'bg-[#A67B7B]/10', border: 'border-[#A67B7B]/20', text: 'text-[#A67B7B]', ring: 'focus:ring-[#A67B7B]/30', badge: 'bg-[#A67B7B]/10 text-[#A67B7B] border-[#A67B7B]/20' }
+        : { bg: 'bg-slate-100', border: 'border-slate-200', text: 'text-slate-700', ring: 'focus:ring-blue-500/30', badge: 'bg-slate-100 text-slate-700 border-slate-200' };
+
+  // Rótulo da view para o header
+  const viewLabel = empresaFixa ? `Status — ${empresaFixa}` : 'Status — Ambas';
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div>
-          <h1 className={`text-2xl font-bold ${tema.text}`}>Minhas Solicitações</h1>
-          <p className="text-sm text-slate-500 mt-1">Acompanhe o status das solicitações enviadas</p>
+      {/* Header com identificação da empresa */}
+      <div className={`rounded-xl border p-4 ${tema.bg} ${tema.border}`}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h1 className={`text-2xl font-bold ${tema.text}`}>Minhas Solicitações</h1>
+            <p className="text-sm text-slate-500 mt-1">Acompanhe o status das solicitações enviadas</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${tema.badge}`}>
+              {viewLabel}
+            </span>
+            <span className="text-xs text-slate-400 hidden sm:inline">
+              {ultimaAtualizacaoLabel}
+            </span>
+          </div>
         </div>
-        <span className="text-xs text-slate-400 hidden sm:inline">
-          {ultimaAtualizacaoLabel}
-        </span>
       </div>
 
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row gap-4">
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 grid grid-cols-1 sm:flex sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
@@ -117,7 +141,31 @@ export default function StatusPage() {
             className={`w-full pl-9 pr-4 h-10 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:border-transparent ${tema.ring}`}
           />
         </div>
-        <div className="relative min-w-[180px]">
+
+        {/* Seletor de empresa — só aparece pra quem tem status-geral (pode ver ambas) */}
+        {temStatusGeral && (
+          <div className="relative sm:min-w-[160px]">
+            <label htmlFor="status-empresa" className="sr-only">Empresa</label>
+            <select
+              id="status-empresa"
+              value={empresaFixa ?? 'Ambas'}
+              onChange={(e) => {
+                const val = e.target.value;
+                setSearchParams(val === 'Ambas' ? {} : { empresa: val });
+              }}
+              className={`w-full pl-3 pr-8 h-10 rounded-lg border border-slate-300 text-sm appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:border-transparent ${tema.ring}`}
+            >
+              <option value="Ambas">Ambas</option>
+              <option value="Alinare">Alinare</option>
+              <option value="Novitah">Novitah</option>
+            </select>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </div>
+          </div>
+        )}
+
+        <div className="relative sm:min-w-[180px]">
           <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <select
             value={filtroStatus}

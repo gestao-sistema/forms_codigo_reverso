@@ -131,7 +131,7 @@ export default function UsuariosPage() {
     { titulo: 'Dashboards', telas: ['dashboard-geral', 'dashboard-alinare', 'dashboard-novitah'] },
     { titulo: 'Formulários', telas: ['formulario-alinare', 'formulario-novitah'] },
     { titulo: 'Listas', telas: ['lista-geral', 'lista-alinare', 'lista-novitah'] },
-    { titulo: 'Status', telas: ['status'] },
+    { titulo: 'Status', telas: ['status-geral', 'status-alinare', 'status-novitah'] },
     { titulo: 'Administração', telas: ['usuarios'] },
   ];
 
@@ -164,21 +164,21 @@ export default function UsuariosPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[640px]">
+            <table className="w-full text-left border-collapse min-w-[560px]">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
-                  <th className="px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Nome</th>
-                  <th className="px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Login</th>
-                  <th className="px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Acesso</th>
-                  <th className="px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">Ações</th>
+                  <th className="px-3 sm:px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Nome</th>
+                  <th className="px-3 sm:px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Login</th>
+                  <th className="px-3 sm:px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Acesso</th>
+                  <th className="px-3 sm:px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {lista.map((u) => (
                   <tr key={u.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="px-5 py-3 whitespace-nowrap text-sm font-medium text-slate-900">{u.nome}</td>
-                    <td className="px-5 py-3 whitespace-nowrap text-sm text-slate-700">{u.usuario}</td>
-                    <td className="px-5 py-3">
+                    <td className="px-3 sm:px-5 py-3 whitespace-nowrap text-sm font-medium text-slate-900">{u.nome}</td>
+                    <td className="px-3 sm:px-5 py-3 whitespace-nowrap text-sm text-slate-700">{u.usuario}</td>
+                    <td className="px-3 sm:px-5 py-3">
                       <div className="flex flex-wrap gap-1">
                         {isAdmin(u) ? (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
@@ -206,25 +206,25 @@ export default function UsuariosPage() {
                         )}
                       </div>
                     </td>
-                    <td className="px-5 py-3 whitespace-nowrap text-center">
+                    <td className="px-3 sm:px-5 py-3 whitespace-nowrap text-center">
                       <div className="flex items-center justify-center gap-1">
                         <button
                           type="button"
                           onClick={() => abrirEditar(u)}
-                          className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-colors cursor-pointer"
+                          className="p-2.5 -m-1 rounded-lg text-slate-500 hover:bg-slate-200 active:bg-slate-300 hover:text-slate-700 transition-colors cursor-pointer"
                           aria-label={`Editar ${u.nome}`}
                         >
-                          <Pencil className="w-4 h-4" />
+                          <Pencil className="w-5 h-5" />
                         </button>
                         <button
                           type="button"
                           onClick={() => onRemover(u)}
                           disabled={u.usuario === 'admin'}
-                          className="p-1.5 rounded-lg text-slate-500 hover:bg-red-100 hover:text-red-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                          className="p-2.5 -m-1 rounded-lg text-slate-500 hover:bg-red-100 active:bg-red-200 hover:text-red-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                           aria-label={`Remover ${u.nome}`}
                           title={u.usuario === 'admin' ? 'Administrador padrão não pode ser removido' : 'Remover'}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-5 h-5" />
                         </button>
                       </div>
                     </td>
@@ -237,7 +237,7 @@ export default function UsuariosPage() {
       </div>
 
       {abrirForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 px-4 pt-[5vh]">
           <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl border border-slate-200 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 sticky top-0 bg-white rounded-t-2xl">
               <h2 className="text-lg font-semibold text-slate-900">

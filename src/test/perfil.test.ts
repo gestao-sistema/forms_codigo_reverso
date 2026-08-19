@@ -22,23 +22,21 @@ describe('homeDoUsuario', () => {
   it('só lista-geral → /admin/lista', () => {
     expect(homeDoUsuario(usuario(['lista-geral']))).toBe('/admin/lista');
   });
-  it('só status → /admin/status', () => {
-    expect(homeDoUsuario(usuario(['status']))).toBe('/admin/status');
+  it('só status-geral → /admin/status', () => {
+    expect(homeDoUsuario(usuario(['status-geral']))).toBe('/admin/status');
+  });
+  it('status-alinare → status com query', () => {
+    expect(homeDoUsuario(usuario(['status-alinare']))).toBe('/admin/status?empresa=Alinare');
   });
 });
 
 describe('navItemsDoUsuario', () => {
-  it('admin vê todos os itens', () => {
+  it('admin vê apenas itens gerais (sem variações por empresa)', () => {
     const items = navItemsDoUsuario(usuario(['usuarios']));
-    // Admin vê tudo: 10 telas (dashboard, lista, formularios, status, usuarios)
-    expect(items.length).toBe(10);
+    expect(items.length).toBe(6);
     expect(items.map(i => i.to)).toEqual([
       '/admin/dashboard',
-      '/admin/dashboard?empresa=Alinare',
-      '/admin/dashboard?empresa=Novitah',
       '/admin/lista',
-      '/admin/lista?empresa=Alinare',
-      '/admin/lista?empresa=Novitah',
       '/admin/alinare',
       '/admin/novitah',
       '/admin/status',
@@ -48,11 +46,11 @@ describe('navItemsDoUsuario', () => {
   });
 
   it('user com telas parciais vê apenas as autorizadas', () => {
-    const items = navItemsDoUsuario(usuario(['dashboard-alinare', 'formulario-alinare', 'status']));
+    const items = navItemsDoUsuario(usuario(['dashboard-alinare', 'formulario-alinare', 'status-alinare']));
     expect(items.map(i => i.to)).toEqual([
       '/admin/dashboard?empresa=Alinare',
       '/admin/alinare',
-      '/admin/status',
+      '/admin/status?empresa=Alinare',
     ]);
   });
 

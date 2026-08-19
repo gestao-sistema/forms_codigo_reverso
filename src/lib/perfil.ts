@@ -17,7 +17,9 @@ export function homeDoUsuario(user: UsuarioAutenticado): string {
   if (user.telas.includes('lista-novitah')) return '/admin/lista?empresa=Novitah';
   if (user.telas.includes('formulario-alinare')) return '/admin/alinare';
   if (user.telas.includes('formulario-novitah')) return '/admin/novitah';
-  if (user.telas.includes('status')) return '/admin/status';
+  if (user.telas.includes('status-geral')) return '/admin/status';
+  if (user.telas.includes('status-alinare')) return '/admin/status?empresa=Alinare';
+  if (user.telas.includes('status-novitah')) return '/admin/status?empresa=Novitah';
 
   return '/admin/dashboard';
 }
@@ -30,15 +32,17 @@ export interface NavItem {
 
 /** Mapa tela → item de navegação. Ordem = ordem exibida na sidebar. */
 const NAV_MAP: Record<Tela, NavItem> = {
-  'dashboard-geral': { to: '/admin/dashboard', label: 'Dashboard Geral', icon: BarChart3 },
-  'dashboard-alinare': { to: '/admin/dashboard?empresa=Alinare', label: 'Dashboard Alinare', icon: BarChart3 },
-  'dashboard-novitah': { to: '/admin/dashboard?empresa=Novitah', label: 'Dashboard Novitah', icon: BarChart3 },
+  'dashboard-geral': { to: '/admin/dashboard', label: 'Dashboard', icon: BarChart3 },
+  'dashboard-alinare': { to: '/admin/dashboard?empresa=Alinare', label: 'Dashboard', icon: BarChart3 },
+  'dashboard-novitah': { to: '/admin/dashboard?empresa=Novitah', label: 'Dashboard', icon: BarChart3 },
   'formulario-alinare': { to: '/admin/alinare', label: 'Formulário Alinare', icon: FileText },
   'formulario-novitah': { to: '/admin/novitah', label: 'Formulário Novitah', icon: FileText },
-  'lista-geral': { to: '/admin/lista', label: 'Lista Geral', icon: ClipboardList },
-  'lista-alinare': { to: '/admin/lista?empresa=Alinare', label: 'Lista Alinare', icon: ClipboardList },
-  'lista-novitah': { to: '/admin/lista?empresa=Novitah', label: 'Lista Novitah', icon: ClipboardList },
-  status: { to: '/admin/status', label: 'Status', icon: ListChecks },
+  'lista-geral': { to: '/admin/lista', label: 'Lista', icon: ClipboardList },
+  'lista-alinare': { to: '/admin/lista?empresa=Alinare', label: 'Lista', icon: ClipboardList },
+  'lista-novitah': { to: '/admin/lista?empresa=Novitah', label: 'Lista', icon: ClipboardList },
+  'status-geral': { to: '/admin/status', label: 'Status', icon: ListChecks },
+  'status-alinare': { to: '/admin/status?empresa=Alinare', label: 'Status', icon: ListChecks },
+  'status-novitah': { to: '/admin/status?empresa=Novitah', label: 'Status', icon: ListChecks },
   usuarios: { to: '/admin/usuarios', label: 'Usuários', icon: Users },
 };
 
@@ -52,16 +56,29 @@ const ORDEM_NAV: Tela[] = [
   'lista-novitah',
   'formulario-alinare',
   'formulario-novitah',
-  'status',
+  'status-geral',
+  'status-alinare',
+  'status-novitah',
+  'usuarios',
+];
+
+/** Sidebar do admin: só gerais + formulários (sem variações empresa). */
+const ORDEM_NAV_ADMIN: Tela[] = [
+  'dashboard-geral',
+  'lista-geral',
+  'formulario-alinare',
+  'formulario-novitah',
+  'status-geral',
   'usuarios',
 ];
 
 /** Itens da sidebar conforme telas permitidas do usuário logado. */
 export function navItemsDoUsuario(user: UsuarioAutenticado): NavItem[] {
-  const telas = isAdmin(user)
-    ? ORDEM_NAV // admin vê tudo
-    : user.telas.filter((t) => t !== 'usuarios'); // admin-only
+  if (isAdmin(user)) {
+    return ORDEM_NAV_ADMIN.map((t) => NAV_MAP[t]);
+  }
 
+  const telas = user.telas.filter((t) => t !== 'usuarios');
   return ORDEM_NAV.filter((t) => telas.includes(t)).map((t) => NAV_MAP[t]);
 }
 
@@ -86,7 +103,11 @@ export function telaDaRota(pathname: string, search: string): Tela | null {
     case '/admin/novitah':
       return 'formulario-novitah';
     case '/admin/status':
-      return 'status';
+      return empresa === 'Alinare'
+        ? 'status-alinare'
+        : empresa === 'Novitah'
+        ? 'status-novitah'
+        : 'status-geral';
     case '/admin/usuarios':
       return 'usuarios';
     default:

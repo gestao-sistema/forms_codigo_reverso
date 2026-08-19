@@ -74,7 +74,7 @@ export default function App() {
             <Route
               path="status"
               element={
-                <ProtectedRoute telas={['status']}>
+                <ProtectedRoute telas={['status-geral', 'status-alinare', 'status-novitah']}>
                   <StatusPage />
                 </ProtectedRoute>
               }

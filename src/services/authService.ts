@@ -24,7 +24,7 @@ export interface IAuthService {
   atualizarUsuario(id: string, data: UpdateUsuarioPayload): Promise<Usuario>;
   removerUsuario(id: string): Promise<void>;
   /** Altera a própria senha (usuário logado). */
-  alterarSenha(novaSenha: string): Promise<void>;
+  alterarSenha(senhaAtual: string, novaSenha: string): Promise<void>;
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────────
@@ -134,11 +134,18 @@ const authService: IAuthService = {
     if (error) throw new AuthError(error.message);
   },
 
-  async alterarSenha(novaSenha) {
+  async alterarSenha(senhaAtual: string, novaSenha: string) {
     const {
       data: { session },
     } = await supabase.auth.getSession();
     if (!session?.user) throw new AuthError('Sessão expirada. Faça login novamente.');
+
+    // Verifica senha atual re-autenticando
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: session.user.email!,
+      password: senhaAtual,
+    });
+    if (authError) throw new AuthError('Senha atual incorreta.');
 
     const { error } = await supabase.auth.updateUser({ password: novaSenha });
     if (error) throw new AuthError(error.message);

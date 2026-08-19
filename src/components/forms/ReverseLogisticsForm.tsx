@@ -265,7 +265,7 @@ export default function ReverseLogisticsForm({ empresa }: ReverseLogisticsFormPr
             </div>
 
             {/* Solicitante + Setor — 2 colunas */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
 
               {/* Solicitante */}
               <div>
@@ -323,7 +323,7 @@ export default function ReverseLogisticsForm({ empresa }: ReverseLogisticsFormPr
             </div>
 
             {/* Código + Nome da cliente — 2 colunas */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
 
               {/* Código da cliente */}
               <div>

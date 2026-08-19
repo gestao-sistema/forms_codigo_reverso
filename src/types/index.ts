@@ -101,7 +101,9 @@ export type Tela =
   | 'lista-geral'
   | 'lista-alinare'
   | 'lista-novitah'
-  | 'status'
+  | 'status-geral'
+  | 'status-alinare'
+  | 'status-novitah'
   | 'usuarios';
 
 /** Todas as telas disponíveis para seleção no cadastro. */
@@ -114,7 +116,9 @@ export const TELAS: Tela[] = [
   'lista-geral',
   'lista-alinare',
   'lista-novitah',
-  'status',
+  'status-geral',
+  'status-alinare',
+  'status-novitah',
   'usuarios',
 ];
 
@@ -128,7 +132,9 @@ export const TELA_LABEL: Record<Tela, string> = {
   'lista-geral': 'Lista Geral',
   'lista-alinare': 'Lista Alinare',
   'lista-novitah': 'Lista Novitah',
-  status: 'Status',
+  'status-geral': 'Status Geral',
+  'status-alinare': 'Status Alinare',
+  'status-novitah': 'Status Novitah',
   usuarios: 'Usuários (admin)',
 };
 
@@ -159,7 +165,7 @@ export function isAdmin(u: Pick<Usuario, 'telas'>): boolean {
 /** Mapeamento legado: perfil antigo → telas equivalentes (migração). */
 export const LEGADO_PERFIL_TELAS: Record<string, Tela[]> = {
   ADMIN: [...TELAS],
-  Alinare: ['dashboard-alinare', 'formulario-alinare', 'lista-alinare', 'status'],
-  Novitah: ['dashboard-novitah', 'formulario-novitah', 'lista-novitah', 'status'],
-  Expedicao: ['dashboard-geral', 'lista-geral'],
+  Alinare: ['dashboard-alinare', 'formulario-alinare', 'lista-alinare', 'status-alinare'],
+  Novitah: ['dashboard-novitah', 'formulario-novitah', 'lista-novitah', 'status-novitah'],
+  Expedicao: ['dashboard-geral', 'lista-geral', 'status-geral'],
 };

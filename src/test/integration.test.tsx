@@ -84,7 +84,7 @@ function renderWithAuth(
 }
 
 const sessaoAdmin = { id: '1', nome: 'Admin', usuario: 'admin', telas: ['usuarios', 'dashboard-geral', 'formulario-alinare'] };
-const sessaoAlinare = { id: '2', nome: 'Alinare User', usuario: 'alinare', telas: ['dashboard-alinare', 'formulario-alinare', 'status'] };
+const sessaoAlinare = { id: '2', nome: 'Alinare User', usuario: 'alinare', telas: ['dashboard-alinare', 'formulario-alinare', 'status-alinare'] };
 
 beforeEach(() => {
   vi.clearAllMocks();

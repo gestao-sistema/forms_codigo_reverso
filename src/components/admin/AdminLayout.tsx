@@ -29,11 +29,6 @@ export default function AdminLayout() {
           <span className="font-semibold text-slate-800">GLR</span>
         </header>
 
-        {/* Topbar desktop com PerfilButton */}
-        <header className="hidden lg:flex items-center justify-end px-8 py-4">
-          <PerfilButton />
-        </header>
-
         {/* Conteúdo das páginas */}
         <main className="p-4 sm:p-6 lg:p-8">
           <Outlet />

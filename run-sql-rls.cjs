@@ -17,7 +17,7 @@ async function main() {
     await client.connect();
     console.log('Conectado ao Supabase');
 
-    const sql = readFileSync(resolve(__dirname, 'src/sql/rls_solicitacoes_v2.sql'), 'utf8');
+    const sql = readFileSync(resolve(__dirname, 'src/sql/rls_solicitacoes_v4.sql'), 'utf8');
     await client.query(sql);
     console.log('RLS aplicado em solicitacoes_reverso.');
 

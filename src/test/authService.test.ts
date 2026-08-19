@@ -88,14 +88,23 @@ describe('authService.getSessao', () => {
 describe('authService.alterarSenha', () => {
   it('lança erro se não tiver sessão', async () => {
     (supabase.auth.getSession as any).mockResolvedValue({ data: { session: null } });
-    await expect(authService.alterarSenha('123456')).rejects.toThrow(AuthError);
+    await expect(authService.alterarSenha('atual123', '123456')).rejects.toThrow(AuthError);
   });
 
-  it('chama updateUser com a nova senha', async () => {
+  it('lança erro se a senha atual estiver incorreta', async () => {
     (supabase.auth.getSession as any).mockResolvedValue({ data: { session: { user: mockUser } } });
+    (supabase.auth.signInWithPassword as any).mockResolvedValue({ error: { message: 'Invalid login credentials' } });
+
+    await expect(authService.alterarSenha('errada', '123456')).rejects.toThrow('Senha atual incorreta.');
+    expect(supabase.auth.updateUser).not.toHaveBeenCalled();
+  });
+
+  it('chama updateUser com a nova senha após validar senha atual', async () => {
+    (supabase.auth.getSession as any).mockResolvedValue({ data: { session: { user: mockUser } } });
+    (supabase.auth.signInWithPassword as any).mockResolvedValue({ error: null });
     (supabase.auth.updateUser as any).mockResolvedValue({ error: null });
 
-    await authService.alterarSenha('123456');
+    await authService.alterarSenha('atual123', '123456');
     expect(supabase.auth.updateUser).toHaveBeenCalledWith({ password: '123456' });
   });
 });
