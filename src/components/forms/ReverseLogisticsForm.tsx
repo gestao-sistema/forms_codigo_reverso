@@ -173,7 +173,7 @@ export default function ReverseLogisticsForm({ empresa }: ReverseLogisticsFormPr
           ? (data.justificativa_outros ?? null)
           : null,
         autorizacao: data.autorizacao,
-        resolvido: false,
+        status: 'pendente',
         tempo_preenchimento_segundos: tempoSegundos,
       });
 
@@ -432,28 +432,19 @@ export default function ReverseLogisticsForm({ empresa }: ReverseLogisticsFormPr
               )}
             </div>
 
-            {/* Justificativa "Outros" — visível condicionalmente com animação */}
-            <div
-              className={`
-                overflow-hidden transition-all duration-200 ease-out
-                ${exibirJustificativa
-                  ? 'max-h-40 opacity-100'
-                  : 'max-h-0 opacity-0 pointer-events-none'
-                }
-              `}
-              aria-hidden={!exibirJustificativa}
-            >
+            {/* Justificativa "Outros" — visível condicionalmente */}
+            {exibirJustificativa && (
               <div className="pt-1">
                 <label htmlFor="justificativa_outros" className={labelBase}>
                   Justifique a opção "Outros"{' '}
-                  {exibirJustificativa && <span className="text-red-500">*</span>}
+                  <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   id="justificativa_outros"
                   rows={3}
                   placeholder="Descreva o motivo detalhadamente..."
-                  disabled={isSubmitting || !exibirJustificativa}
-                  aria-required={exibirJustificativa}
+                  disabled={isSubmitting}
+                  aria-required={true}
                   aria-invalid={!!errors.justificativa_outros}
                   aria-describedby={
                     errors.justificativa_outros ? 'err-justificativa' : undefined
@@ -474,7 +465,7 @@ export default function ReverseLogisticsForm({ empresa }: ReverseLogisticsFormPr
                   </p>
                 )}
               </div>
-            </div>
+            )}
 
             {/* Autorização do Reverso */}
             <div>

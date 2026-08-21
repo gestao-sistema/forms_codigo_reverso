@@ -67,8 +67,9 @@ const apiService: IApiService = {
     if (filtros?.dataFim) {
       query = query.lte('data_solicitacao', filtros.dataFim);
     }
-    if (filtros?.resolvido !== undefined) {
-      query = query.eq('resolvido', filtros.resolvido);
+    if (filtros?.status !== undefined) {
+      const statuses = Array.isArray(filtros.status) ? filtros.status : [filtros.status];
+      query = query.in('status', statuses);
     }
     const { data, error } = await query;
     checarErro(error, 'Erro ao buscar solicitações.');

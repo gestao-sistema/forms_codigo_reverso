@@ -1,8 +1,11 @@
 // ── Modal de Detalhes da Solicitação ─────────────────────────────────────────
-import { useEffect } from 'react';
-import { X, Timer, Calendar, User, Package, MapPin, Building2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
+import { X, Timer, Calendar, User, Package, MapPin, Building2, StickyNote } from 'lucide-react';
 import type { Solicitacao } from '../../types';
+import { STATUS_LABEL } from '../../types';
 import { formatarTempo } from '../../services/analytics';
+import apiService from '../../services/apiService';
 
 interface RecordDetailModalProps {
   isOpen: boolean;
@@ -15,6 +18,14 @@ export default function RecordDetailModal({
   solicitacao,
   onClose,
 }: RecordDetailModalProps) {
+  const [anotacoes, setAnotacoes] = useState('');
+  const [salvandoAnot, setSalvandoAnot] = useState(false);
+
+  // Sincroniza textarea quando abre/troca de registro
+  useEffect(() => {
+    setAnotacoes(solicitacao?.anotacoes ?? '');
+  }, [solicitacao?.id, solicitacao?.anotacoes]);
+
   // Fechar com tecla esc
   useEffect(() => {
     if (!isOpen) return;
@@ -32,6 +43,22 @@ export default function RecordDetailModal({
   }, [isOpen, onClose]);
 
   if (!isOpen || !solicitacao) return null;
+
+  /** Salva anotações no banco. */
+  const salvarAnotacoes = async () => {
+    setSalvandoAnot(true);
+    try {
+      await apiService.updateSolicitacao(solicitacao.id, {
+        anotacoes: anotacoes.trim() || null,
+      });
+      solicitacao.anotacoes = anotacoes.trim() || null;
+      toast.success('Anotações salvas.');
+    } catch {
+      toast.error('Erro ao salvar anotações.');
+    } finally {
+      setSalvandoAnot(false);
+    }
+  };
 
   const bgEmpresa =
     solicitacao.empresa === 'Alinare' ? 'bg-[#2B2D42]' : 'bg-[#A67B7B]';
@@ -83,12 +110,12 @@ export default function RecordDetailModal({
               </span>
               <span
                 className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                  solicitacao.resolvido
-                    ? 'bg-green-100 text-green-700'
+                  solicitacao.status === 'concluido'
+                    ? 'bg-emerald-100 text-emerald-700'
                     : 'bg-amber-100 text-amber-700'
                 }`}
               >
-                {solicitacao.resolvido ? 'Resolvido' : 'Pendente'}
+                {STATUS_LABEL[solicitacao.status] ?? 'Pendente'}
               </span>
             </div>
             <h2 className="text-lg font-bold text-slate-800">
@@ -161,6 +188,33 @@ export default function RecordDetailModal({
                   </p>
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* Seção 4: Anotações internas */}
+          <div className="mb-6">
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-800 mb-3">
+              <StickyNote className="w-4 h-4 text-slate-400" /> Anotações
+            </h3>
+            <textarea
+              rows={3}
+              value={anotacoes}
+              onChange={(e) => setAnotacoes(e.target.value)}
+              placeholder="Anotações internas sobre esta solicitação..."
+              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm text-slate-900
+                placeholder:text-slate-400 resize-none transition-colors duration-150
+                focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-transparent"
+            />
+            <div className="flex justify-end mt-2">
+              <button
+                type="button"
+                onClick={salvarAnotacoes}
+                disabled={salvandoAnot || anotacoes === (solicitacao.anotacoes ?? '')}
+                className="px-4 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-medium
+                  hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                {salvandoAnot ? 'Salvando...' : 'Salvar anotações'}
+              </button>
             </div>
           </div>
 

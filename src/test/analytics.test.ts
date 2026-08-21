@@ -24,7 +24,7 @@ function sol(overrides: Partial<Solicitacao> = {}): Solicitacao {
     motivo: 'Peça com defeito',
     justificativa_outros: null,
     autorizacao: 'Joice Mendes',
-    resolvido: false,
+    status: 'pendente' as const,
     tempo_preenchimento_segundos: 60,
     ...overrides,
   };
@@ -37,8 +37,10 @@ describe('analytics', () => {
       expect(res).toEqual({
         total: 0,
         pendentes: 0,
-        resolvidos: 0,
-        taxaResolucao: 0,
+        etiquetaGerada: 0,
+        postados: 0,
+        concluidos: 0,
+        taxaConclusao: 0,
         tempoMedioSegundos: 0,
         motivoTop: '—'
       });
@@ -46,17 +48,21 @@ describe('analytics', () => {
 
     it('calcula KPIs corretamente para lista mista', () => {
       const dados = [
-        sol({ resolvido: true, tempo_preenchimento_segundos: 60, motivo: 'Endereço incorreto' }),
-        sol({ resolvido: true, tempo_preenchimento_segundos: 120, motivo: 'Outros' }),
-        sol({ resolvido: false, tempo_preenchimento_segundos: 0, motivo: 'Outros' })
+        sol({ status: 'concluido', tempo_preenchimento_segundos: 60, motivo: 'Endereço incorreto' }),
+        sol({ status: 'concluido', tempo_preenchimento_segundos: 120, motivo: 'Outros' }),
+        sol({ status: 'pendente', tempo_preenchimento_segundos: 0, motivo: 'Outros' }),
+        sol({ status: 'etiqueta_gerada', tempo_preenchimento_segundos: 0, motivo: 'Outros' }),
+        sol({ status: 'postado', tempo_preenchimento_segundos: 0, motivo: 'Outros' })
       ];
 
       const res = calcularKpis(dados);
-      expect(res.total).toBe(3);
-      expect(res.resolvidos).toBe(2);
+      expect(res.total).toBe(5);
+      expect(res.concluidos).toBe(2);
       expect(res.pendentes).toBe(1);
-      expect(res.taxaResolucao).toBe(67); // Math.round((2/3) * 100)
-      expect(res.tempoMedioSegundos).toBe(60); // 180 / 3
+      expect(res.etiquetaGerada).toBe(1);
+      expect(res.postados).toBe(1);
+      expect(res.taxaConclusao).toBe(40); // Math.round((2/5) * 100)
+      expect(res.tempoMedioSegundos).toBe(36); // 180 / 5
       expect(res.motivoTop).toBe('Outros');
     });
 
@@ -157,9 +163,9 @@ describe('analytics', () => {
   describe('porAutorizador', () => {
     it('ordena por total desc', () => {
       const dados = [
-        sol({ autorizacao: 'Joice Mendes', resolvido: true }),
-        sol({ autorizacao: 'Viviane Ulian', resolvido: false }),
-        sol({ autorizacao: 'Viviane Ulian', resolvido: true })
+        sol({ autorizacao: 'Joice Mendes', status: 'concluido' }),
+        sol({ autorizacao: 'Viviane Ulian', status: 'pendente' }),
+        sol({ autorizacao: 'Viviane Ulian', status: 'concluido' })
       ];
 
       const res = porAutorizador(dados);

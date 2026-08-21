@@ -1,19 +1,32 @@
 // ── Lista em Tabela das Solicitações ─────────────────────────────────────────
-import { Inbox, Trash2 } from 'lucide-react';
-import type { Solicitacao } from '../../types';
+import { Inbox, Trash2, Clock, Tag, PackageCheck, CheckCircle2, ArrowRight } from 'lucide-react';
+import type { Solicitacao, StatusSolicitacao } from '../../types';
 import { COR_EMPRESA } from '../../services/analytics';
+
+/** Visual + próxima ação disponível na Lista (Expedição) para cada status. */
+const STATUS_LISTA: Record<
+  StatusSolicitacao,
+  { bg: string; text: string; icon: typeof Clock; label: string; acao?: string }
+> = {
+  pendente: { bg: 'bg-amber-50', text: 'text-amber-700', icon: Clock, label: 'Pendente', acao: 'Etiqueta Gerada' },
+  etiqueta_gerada: { bg: 'bg-blue-50', text: 'text-blue-700', icon: Tag, label: 'Etiqueta Gerada' },
+  postado: { bg: 'bg-violet-50', text: 'text-violet-700', icon: PackageCheck, label: 'Postado', acao: 'Concluir' },
+  concluido: { bg: 'bg-emerald-50', text: 'text-emerald-700', icon: CheckCircle2, label: 'Concluído' },
+};
 
 interface RecordsListProps {
   dados: Solicitacao[];
-  onToggleStatus?: (id: string, currentStatus: boolean, e: React.MouseEvent) => void;
+  onToggleStatus?: (id: string, currentStatus: StatusSolicitacao, e: React.MouseEvent) => void;
   /** Apaga uma solicitação. Exibido apenas quando showDelete está ativo. */
   onDelete?: (id: string, e: React.MouseEvent) => void;
   onClickRow: (solicitacao: Solicitacao) => void;
   loading: boolean;
-  /** Oculta a coluna/ação "Resolvido" (usado no Status view-only) */
+  /** Oculta a coluna/ação "Status" (usado no Status view-only) */
   readOnly?: boolean;
   /** Exibe coluna/ação de apagar (apenas ADMIN deve ativar) */
   showDelete?: boolean;
+  /** Decide se o botão de ação aparece para o status (permissão por papel). */
+  podeAgir?: (status: StatusSolicitacao) => boolean;
 }
 
 export default function RecordsList({
@@ -24,6 +37,7 @@ export default function RecordsList({
   loading,
   readOnly,
   showDelete,
+  podeAgir,
 }: RecordsListProps) {
   // Formatador
   const formatDate = (dateStr: string) => {
@@ -63,7 +77,7 @@ export default function RecordsList({
         <table className="w-full text-left border-collapse min-w-[1100px]">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200">
-              {!readOnly && <th className={`${thCls} text-center`}>Resolvido</th>}
+              {!readOnly && <th className={`${thCls} text-center`}>Status</th>}
               <th className={thCls}>Empresa</th>
               <th className={thCls}>Data</th>
               <th className={thCls}>Solicitante</th>
@@ -84,23 +98,36 @@ export default function RecordsList({
                 onClick={() => onClickRow(s)}
                 className="hover:bg-slate-50/80 transition-colors cursor-pointer group"
               >
-                {!readOnly && (
-                  <td className="px-4 py-3 text-center whitespace-nowrap">
-                    <div
-                      className="inline-flex items-center justify-center p-2 -m-2 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
-                      onClick={(e) => onToggleStatus?.(s.id, s.resolvido, e)}
-                      role="button"
-                      aria-label={`Marcar como ${s.resolvido ? 'pendente' : 'resolvido'}`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={s.resolvido}
-                        readOnly
-                        className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500 cursor-pointer pointer-events-none"
-                      />
-                    </div>
-                  </td>
-                )}
+                {!readOnly && (() => {
+                  const resolvidoAntigo = (s as any).resolvido;
+                  const statusReal = s.status || (resolvidoAntigo ? 'concluido' : 'pendente');
+                  const vis = STATUS_LISTA[statusReal] || STATUS_LISTA['pendente'];
+                  const Icon = vis.icon;
+                  return (
+                    <td className="px-4 py-3 text-center whitespace-nowrap">
+                      <div className="flex items-center justify-center gap-2">
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${vis.bg} ${vis.text} border-slate-200`}
+                        >
+                          <Icon className="w-3.5 h-3.5" />
+                          {vis.label}
+                        </span>
+                        {vis.acao && podeAgir?.(statusReal) !== false && (
+                          <button
+                            type="button"
+                            onClick={(e) => onToggleStatus?.(s.id, statusReal, e)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium
+                              bg-slate-900 text-white hover:bg-slate-700 transition-colors"
+                            aria-label={vis.acao}
+                          >
+                            {vis.acao}
+                            <ArrowRight className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  );
+                })()}
                 <td className="px-4 py-3 whitespace-nowrap">
                   <span
                     className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold text-white`}

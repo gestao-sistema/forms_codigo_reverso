@@ -16,6 +16,8 @@ import ListPage from './pages/ListPage';
 import StatusPage from './pages/StatusPage';
 import UsuariosPage from './pages/UsuariosPage';
 
+import KanbanPage from './pages/KanbanPage';
+
 /** Redireciona a raiz para a home do usuário (ou login). */
 function RaizRedirect() {
   const { user, isLoading } = useAuth();
@@ -76,6 +78,14 @@ export default function App() {
               element={
                 <ProtectedRoute telas={['status-geral', 'status-alinare', 'status-novitah']}>
                   <StatusPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="kanban"
+              element={
+                <ProtectedRoute telas={['kanban']}>
+                  <KanbanPage />
                 </ProtectedRoute>
               }
             />

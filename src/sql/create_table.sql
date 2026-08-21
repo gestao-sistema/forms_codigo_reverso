@@ -5,7 +5,9 @@
 --         empresas Alinare e Novitah.
 -- ============================================================
 
-CREATE TABLE IF NOT EXISTS solicitacoes_reverso (
+DROP TABLE IF EXISTS solicitacoes_reverso CASCADE;
+
+CREATE TABLE solicitacoes_reverso (
   -- Chave primária UUID gerada automaticamente
   id                              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
@@ -41,8 +43,17 @@ CREATE TABLE IF NOT EXISTS solicitacoes_reverso (
   -- Autorização do reverso
   autorizacao                     TEXT NOT NULL,
 
-  -- Status de resolução
-  resolvido                       BOOLEAN NOT NULL DEFAULT FALSE,
+  -- Status no fluxo: pendente → etiqueta_gerada → postado → concluido
+  status                          TEXT NOT NULL DEFAULT 'pendente'
+                                    CHECK (status IN ('pendente','etiqueta_gerada','postado','concluido')),
+
+  -- Timestamps de transição (preenchidos na aplicação)
+  etiqueta_gerada_em              TIMESTAMPTZ,
+  postado_em                      TIMESTAMPTZ,
+  concluido_em                    TIMESTAMPTZ,
+
+  -- Anotações livres da expedição/comercial
+  anotacoes                       TEXT,
 
   -- Rastreamento de tempo de preenchimento do formulário (em segundos)
   tempo_preenchimento_segundos    INTEGER NOT NULL DEFAULT 0
@@ -57,9 +68,9 @@ CREATE INDEX IF NOT EXISTS idx_sr_empresa
 CREATE INDEX IF NOT EXISTS idx_sr_data_solicitacao
   ON solicitacoes_reverso (data_solicitacao DESC);
 
--- Filtragem por status de resolução
-CREATE INDEX IF NOT EXISTS idx_sr_resolvido
-  ON solicitacoes_reverso (resolvido);
+-- Filtragem por status do fluxo
+CREATE INDEX IF NOT EXISTS idx_sr_status
+  ON solicitacoes_reverso (status);
 
 -- Consultas combinadas empresa + data (caso de uso mais comum)
 CREATE INDEX IF NOT EXISTS idx_sr_empresa_data

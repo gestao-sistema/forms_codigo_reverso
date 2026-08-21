@@ -26,9 +26,11 @@ export const COR_MOTIVO: string[] = [
 export interface Kpis {
   total: number;
   pendentes: number;
-  resolvidos: number;
-  /** Percentual de resolução (0–100) */
-  taxaResolucao: number;
+  etiquetaGerada: number;
+  postados: number;
+  concluidos: number;
+  /** Percentual de conclusão (0–100) */
+  taxaConclusao: number;
   /** Tempo médio de preenchimento em segundos */
   tempoMedioSegundos: number;
   /** Motivo mais recorrente */
@@ -37,10 +39,12 @@ export interface Kpis {
 
 export function calcularKpis(dados: Solicitacao[]): Kpis {
   const total = dados.length;
-  const resolvidos = dados.filter((s) => s.resolvido).length;
-  const pendentes = total - resolvidos;
+  const pendentes = dados.filter((s) => s.status === 'pendente').length;
+  const etiquetaGerada = dados.filter((s) => s.status === 'etiqueta_gerada').length;
+  const postados = dados.filter((s) => s.status === 'postado').length;
+  const concluidos = dados.filter((s) => s.status === 'concluido').length;
 
-  const taxaResolucao = total > 0 ? Math.round((resolvidos / total) * 100) : 0;
+  const taxaConclusao = total > 0 ? Math.round((concluidos / total) * 100) : 0;
 
   const somaTempo = dados.reduce(
     (acc, s) => acc + s.tempo_preenchimento_segundos,
@@ -60,7 +64,16 @@ export function calcularKpis(dados: Solicitacao[]): Kpis {
     }
   });
 
-  return { total, pendentes, resolvidos, taxaResolucao, tempoMedioSegundos, motivoTop };
+  return {
+    total,
+    pendentes,
+    etiquetaGerada,
+    postados,
+    concluidos,
+    taxaConclusao,
+    tempoMedioSegundos,
+    motivoTop,
+  };
 }
 
 // ── Dataset: quantidade por motivo ────────────────────────────────────────────
@@ -152,7 +165,7 @@ export function porAutorizador(dados: Solicitacao[]): AutorizadorDatum[] {
 
   dados.forEach((s) => {
     const atual = mapa.get(s.autorizacao) ?? { pendentes: 0, resolvidos: 0 };
-    if (s.resolvido) atual.resolvidos += 1;
+    if (s.status === 'concluido') atual.resolvidos += 1;
     else atual.pendentes += 1;
     mapa.set(s.autorizacao, atual);
   });

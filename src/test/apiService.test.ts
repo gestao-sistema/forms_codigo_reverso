@@ -24,7 +24,7 @@ const solicitacaoMock: Solicitacao = {
   motivo: 'Peça com defeito',
   justificativa_outros: null,
   autorizacao: 'Joice Mendes',
-  resolvido: false,
+  status: 'pendente' as const,
   tempo_preenchimento_segundos: 60,
 };
 
@@ -137,26 +137,26 @@ describe('apiService.getSolicitacoes', () => {
     expect(mock.lte).toHaveBeenCalledWith('data_solicitacao', '2024-12-31');
   });
 
-  it('resolvido: aplica .eq(resolvido, boolean)', async () => {
+  it('status: aplica .in(status, array)', async () => {
     const mock = chainBuilder({ data: [], error: null });
     (supabase.from as ReturnType<typeof vi.fn>).mockImplementation(() => mock);
 
-    await apiService.getSolicitacoes({ resolvido: true });
-    expect(mock.eq).toHaveBeenCalledWith('resolvido', true);
+    await apiService.getSolicitacoes({ status: 'pendente' });
+    expect(mock.in).toHaveBeenCalledWith('status', ['pendente']);
 
     vi.clearAllMocks();
-    await apiService.getSolicitacoes({ resolvido: false });
-    expect(mock.eq).toHaveBeenCalledWith('resolvido', false);
+    await apiService.getSolicitacoes({ status: ['pendente', 'etiqueta_gerada'] });
+    expect(mock.in).toHaveBeenCalledWith('status', ['pendente', 'etiqueta_gerada']);
   });
 });
 
 describe('apiService.updateSolicitacao', () => {
   it('sucesso: retorna registro atualizado', async () => {
-    const mock = chainBuilder({ data: { ...solicitacaoMock, resolvido: true }, error: null });
+    const mock = chainBuilder({ data: { ...solicitacaoMock, status: 'concluido' }, error: null });
     (supabase.from as ReturnType<typeof vi.fn>).mockImplementation(() => mock);
 
-    const res = await apiService.updateSolicitacao('uuid-1', { resolvido: true });
-    expect(res.resolvido).toBe(true);
+    const res = await apiService.updateSolicitacao('uuid-1', { status: 'concluido' });
+    expect(res.status).toBe('concluido');
     expect(mock.eq).toHaveBeenCalledWith('id', 'uuid-1');
   });
 

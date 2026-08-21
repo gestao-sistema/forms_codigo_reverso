@@ -54,16 +54,16 @@ src/
 ├── App.tsx                    # Roteamento + providers
 ├── main.tsx                   # Entry point
 ├── components/
-│   ├── admin/                 # Dashboard, listas, gráficos
+│   ├── admin/                 # Dashboard, listas, gráficos, Kanban
 │   ├── auth/                  # ProtectedRoute
 │   └── forms/                 # ReverseLogisticsForm
 ├── context/
 │   └── AuthContext.tsx        # Estado global de autenticação
 ├── hooks/
-│   └── useSolicitacoes.ts     # Data fetching + cache
+│   └── useSolicitacoes.ts     # Data fetching + cache + polling
 ├── lib/
 │   ├── supabase.ts            # Cliente Supabase (singleton)
-│   └── perfil.ts              # Helpers de navegação por perfil
+│   └── perfil.ts              # Helpers de navegação por telas
 ├── pages/                     # Páginas (Login, Dashboard, Formulários, etc)
 ├── schemas/
 │   └── formSchema.ts          # Validação Zod do formulário
@@ -73,7 +73,7 @@ src/
 ├── supabase/functions/
 │   └── admin-usuarios/        # Edge Function CRUD auth.users (service_role)
 └── types/
-    └── index.ts               # Tipos compartilhados (Solicitacao, Usuario, Perfil)
+    └── index.ts               # Tipos compartilhados (Solicitacao, Usuario, Tela)
 ```
 
 **Padrão de camadas**:
@@ -95,7 +95,7 @@ Componentes **nunca** acessam banco diretamente.
 | ------------------------------ | ------------- | ------------------------------------------------------- |
 | `id`                           | `uuid`        | PK, `gen_random_uuid()`                                 |
 | `created_at`                   | `timestamptz` | Timestamp de inserção                                   |
-| `empresa`                      | `text`        | `'Alinare'` | `'Novitah'`                               |
+| `empresa`                      | `text`        | `'Alinare'` \| `'Novitah'`                              |
 | `data_solicitacao`             | `date`        | Data da solicitação (YYYY-MM-DD)                        |
 | `solicitante`                  | `text`        | Nome do solicitante interno                             |
 | `setor`                        | `text`        | Setor (ex: 'Comercial Alinare')                         |
@@ -105,15 +105,19 @@ Componentes **nunca** acessam banco diretamente.
 | `motivo`                       | `text`        | Motivo (enum: Peça com defeito, Mercadoria errada, ...) |
 | `justificativa_outros`         | `text`        | Obrigatório quando motivo = 'Outros'                    |
 | `autorizacao`                  | `text`        | Nome do autorizador                                     |
-| `resolvido`                    | `boolean`     | Status de resolução                                     |
+| `status`                       | `text`        | `'pendente' \| 'etiqueta_gerada' \| 'postado' \| 'concluido'` |
+| `etiqueta_gerada_em`           | `timestamptz` | Quando a etiqueta foi gerada (Expedição)                |
+| `postado_em`                   | `timestamptz` | Quando a cliente postou a mercadoria (Comercial)        |
+| `concluido_em`                 | `timestamptz` | Quando a solicitação foi finalizada (Expedição)         |
+| `anotacoes`                    | `text`        | Campo livre para anotações internas                     |
 | `tempo_preenchimento_segundos` | `integer`     | Tempo de preenchimento do formulário                    |
 
 
-**Índices recomendados**:
+**Índices**:
 
 ```sql
 CREATE INDEX idx_solicitacoes_empresa_data ON solicitacoes_reverso (empresa, data_solicitacao DESC);
-CREATE INDEX idx_solicitacoes_resolvido ON solicitacoes_reverso (resolvido);
+CREATE INDEX idx_solicitacoes_status ON solicitacoes_reverso (status);
 ```
 
 ### Tabela `usuarios` (gerenciada via Supabase Auth + Edge Function)
@@ -125,8 +129,7 @@ Usuários existem em `auth.users` (Supabase Auth). Metadata no JWT:
 | -------------- | ------ | --------------------------------------------------------- |
 | `nome`         | `text` | Nome completo                                             |
 | `usuario`      | `text` | Login único (username)                                    |
-| `perfil`       | `text` | `'ADMIN' | 'Alinare' | 'Novitah' | 'Expedicao'`           |
-| `email`        | `text` | `{usuario}@cr.internal` (interno, não exposto ao usuário) |
+| `telas`        | `text[]` | Array de telas permitidas (ex: `['lista-geral', 'status-alinare']`) |
 
 
 **Senha**: NUNCA armazenada/acessada pelo app. Hash gerenciado 100% pelo Supabase Auth (bcrypt/argon2 interno). Login via `signInWithPassword(email, senha)` → JWT + refresh token.
@@ -140,18 +143,48 @@ CRUD admin via Edge Function `admin-usuarios` (service_role, só ADMIN chama):
 
 ---
 
-## Perfis de Acesso
+## Telas de Acesso (Permissões Granulares)
+
+Substituíram perfis legados. Cada usuário recebe um array `telas` no JWT:
 
 
-| Perfil      | Escopo Empresa | Rotas Permitidas                      |
-| ----------- | -------------- | ------------------------------------- |
-| `ADMIN`     | Ambas          | Todas (`/admin/*`, `/admin/usuarios`) |
-| `Expedicao` | Ambas          | Dashboard, Lista                      |
-| `Alinare`   | Alinare        | Formulário Alinare, Status, Dashboard |
-| `Novitah`   | Novitah        | Formulário Novitah, Status, Dashboard |
+| Tela               | Descrição                              | Empresa (escopo) |
+| ------------------ | -------------------------------------- | ---------------- |
+| `dashboard-geral`  | Dashboard (todas empresas)             | Ambas            |
+| `dashboard-alinare`| Dashboard (Alinare)                    | Alinare          |
+| `dashboard-novitah`| Dashboard (Novitah)                    | Novitah          |
+| `formulario-alinare`| Formulário Alinare                    | Alinare          |
+| `formulario-novitah`| Formulário Novitah                    | Novitah          |
+| `lista-geral`      | Lista de solicitações (Expedição)      | Ambas            |
+| `lista-alinare`    | Lista (Alinare)                        | Alinare          |
+| `lista-novitah`    | Lista (Novitah)                        | Novitah          |
+| `status-geral`     | Status (Comercial vê tudo)             | Ambas            |
+| `status-alinare`   | Status (Alinare)                       | Alinare          |
+| `status-novitah`   | Status (Novitah)                       | Novitah          |
+| `kanban`           | Kanban (visão geral do fluxo)          | Ambas            |
+| `usuarios`         | Administração de usuários (Admin)      | Ambas            |
 
 
-Definidos em `src/types/index.ts` → `ESCOPO_EMPRESA` e `PERFIL_LABEL`.
+Definidos em `src/types/index.ts` → `Tela`, `TELAS`, `TELA_LABEL`.
+
+---
+
+## Fluxo de Status (Novo)
+
+```
+pendente → etiqueta_gerada → postado → concluido
+```
+
+| Status          | Quem move        | Onde           | Timestamp            |
+| --------------- | ---------------- | --------------- | -------------------- |
+| `pendente`      | — (criação)      | Formulário      | —                    |
+| `etiqueta_gerada`| **Expedição** (`lista-*`) | Lista / Kanban | `etiqueta_gerada_em` |
+| `postado`       | **Comercial** (`status-*` sem `lista-*`) | Status / Kanban | `postado_em`        |
+| `concluido`     | **Expedição** (`lista-*`) | Lista / Kanban | `concluido_em`      |
+
+- **Admin** (`usuarios`) pode mover em qualquer direção
+- **Expedição** (tela `lista-*`) → `pendente→etiqueta_gerada`, `postado→concluido`
+- **Comercial** (tela `status-*` **sem** `lista-*`) → `etiqueta_gerada→postado`
 
 ---
 
@@ -179,6 +212,7 @@ npm run dev      # Servidor de desenvolvimento (Vite + HMR)
 npm run build    # Build produção (tsc + vite build)
 npm run lint     # Oxlint (rápido, sem type-check)
 npm run preview  # Preview do build local
+npm run test     # Vitest (unit + integration)
 ```
 
 ---
@@ -189,6 +223,15 @@ Tipos principais em `src/types/index.ts`:
 
 ```typescript
 type Empresa = 'Alinare' | 'Novitah';
+
+export const STATUS_SOLICITACAO = [
+  'pendente',
+  'etiqueta_gerada',
+  'postado',
+  'concluido',
+] as const;
+
+export type StatusSolicitacao = typeof STATUS_SOLICITACAO[number];
 
 interface Solicitacao {
   id: string;
@@ -203,18 +246,23 @@ interface Solicitacao {
   motivo: string;
   justificativa_outros?: string | null;
   autorizacao: string;
-  resolvido: boolean;
+  status: StatusSolicitacao;
+  etiqueta_gerada_em?: string | null;
+  postado_em?: string | null;
+  concluido_em?: string | null;
+  anotacoes?: string | null;
   tempo_preenchimento_segundos: number;
 }
 
 type CreateSolicitacaoPayload = Omit<Solicitacao, 'id' | 'created_at'>;
-type UpdateSolicitacaoPayload = Partial[[ORCA_RICH_MD:de5f6ef2e3ca4a18792719dd005085be:inline-html:%3CCreateSolicitacaoPayload%3E]];
+type UpdateSolicitacaoPayload = Partial<Omit<Solicitacao, 'id' | 'created_at'>>;
 
 interface FiltrosSolicitacoes {
   empresa?: Empresa | 'Ambas';
   dataInicio?: string;   // YYYY-MM-DD
   dataFim?: string;      // YYYY-MM-DD
-  resolvido?: boolean;
+  status?: StatusSolicitacao | StatusSolicitacao[];
+  buscaCliente?: string;
 }
 ```
 
@@ -237,7 +285,7 @@ Zod com `superRefine` para regra condicional:
 1. `LoginPage` → `authService.login(usuario, senha)`
 2. `authService` transforma login em `{usuario}@cr.internal`
 3. Chama `supabase.auth.signInWithPassword` (banco de dados Supabase nativo)
-4. Sucesso → JWT e refresh token salvos (SDK Supabase). O JWT inclui os custom claims em `user_metadata` (`nome`, `usuario`, `perfil`).
+4. Sucesso → JWT e refresh token salvos (SDK Supabase). O JWT inclui os custom claims em `user_metadata` (`nome`, `usuario`, `telas`).
 5. `AuthProvider` escuta mudanças de sessão via `onAuthStateChange` e popula o contexto React.
 
 **Segurança**: Senhas são processadas e hasheadas nativamente pelo Supabase (não transitam no seu backend, e o DB não as guarda em texto plano). Sessão flui via JWT HttpOnly/Secure ou localStorage (gerenciado pelo JS client do Supabase).
@@ -255,12 +303,12 @@ Funcionalidade em `src/services/analytics.ts` / `apiService.ts`:
 **Colunas esperadas na planilha**:
 
 ```
-Empresa | Data Solicitação | Solicitante | Setor | Código Cliente | Nome Cliente | Endereço Postagem | Motivo | Justificativa Outros | Autorização | Resolvido | Tempo Preenchimento (s)
+Empresa | Data Solicitação | Solicitante | Setor | Código Cliente | Nome Cliente | Endereço Postagem | Motivo | Justificativa Outros | Autorização | Status | Etiqueta Gerada Em | Postado Em | Concluido Em | Anotações | Tempo Preenchimento (s)
 ```
 
 ---
 
-## Dashboard &amp; Gráficos (`src/components/admin/`)
+## Dashboard, Kanban & Gráficos (`src/components/admin/`)
 
 
 | Componente           | Biblioteca             | Dados                    |
@@ -270,9 +318,11 @@ Empresa | Data Solicitação | Solicitante | Setor | Código Cliente | Nome Clie
 | `ChartTimeline`      | Recharts (LineChart)   | Solicitações por dia     |
 | `ChartAutorizador`   | Recharts (BarChart)    | Por autorizador          |
 | `ChartMotivoEmpresa` | Recharts (Grouped Bar) | Motivo × Empresa         |
+| `SummaryCards`       | —                      | 5 KPIs (Total, Pendentes, Etiqueta Gerada, Postados, Concluídos) |
+| `KanbanPage`         | — (botões, sem DnD)    | 4 colunas por status     |
 
 
-Dados via `useSolicitacoes.ts` (hook com cache e invalidação).
+Dados via `useSolicitacoes.ts` (hook com cache, polling 15s e invalidação).
 
 ---
 
@@ -316,15 +366,23 @@ CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0", "--port", "4173"]
 
 1. `src/types/index.ts` → array `SETORES`
 
-### Novo perfil de acesso
+### Nova tela de acesso
 
-1. `src/types/index.ts` → `Perfil` type + `ESCOPO_EMPRESA` + `PERFIL_LABEL`
-2. `src/lib/perfil.ts` → `homeDoPerfil()` + `navItemsDoPerfil()`
-3. `src/App.tsx` → `ProtectedRoute roles={...}` nas rotas novas
+1. `src/types/index.ts` → `Tela` type + `TELAS` + `TELA_LABEL`
+2. `src/lib/perfil.ts` → `NAV_MAP` + `ORDEM_NAV` + `ORDEM_NAV_ADMIN` + `telaDaRota`
+3. `src/App.tsx` → `ProtectedRoute telas={['nova-tela']}` na rota nova
+4. `src/pages/UsuariosPage.tsx` → adicionar grupo checkbox na UI
 
 ### Migração de banco (Supabase)
 
 Use **Supabase Migrations** (`supabase migration new`) ou SQL direto no Dashboard → SQL Editor.
+
+Para recriar tabela do zero (novo ambiente):
+
+```bash
+# 1. Rodar create_table.sql (DROP + CREATE)
+# 2. Rodar rls_solicitacoes_v4.sql
+```
 
 ---
 
@@ -337,7 +395,9 @@ Use **Supabase Migrations** (`supabase migration new`) ou SQL direto no Dashboar
 | Login falha "Usuário ou senha inválidos" | Usuário não existe / senha errada | Admin gerencia senhas na aba de Usuários                           |
 | Gráficos vazios                          | RLS bloqueando SELECT             | Policy `SELECT` para `anon` / `authenticated` na tabela            |
 | Build falha no `tsc`                     | Tipos desatualizados              | `npm install` + verifique `src/types/index.ts` sincronizado com DB |
-
+| Kanban não carrega / tela cortada        | Height mal calculada              | Ajuste `h-[calc(100dvh-...)]` em `KanbanPage.tsx` por breakpoint  |
+| Botão "Marcar postado" não aparece       | Permissão de tela                 | Usuário precisa de `status-*` **sem** `lista-*` (ou `usuarios`)    |
+| Erro ao salvar anotações                 | Coluna `anotacoes` não existe     | Rode `ALTER TABLE solicitacoes_reverso ADD COLUMN IF NOT EXISTS anotacoes TEXT;` |
 
 ---
 

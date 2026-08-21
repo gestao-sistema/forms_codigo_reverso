@@ -1,5 +1,5 @@
 // ── Helpers de perfil: rota inicial e itens de navegação ─────────────────────
-import { BarChart3, ClipboardList, FileText, ListChecks, Users } from 'lucide-react';
+import { BarChart3, ClipboardList, FileText, ListChecks, Users, SquareKanban } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { Tela, UsuarioAutenticado } from '../types';
 import { isAdmin } from '../types';
@@ -43,6 +43,7 @@ const NAV_MAP: Record<Tela, NavItem> = {
   'status-geral': { to: '/admin/status', label: 'Status', icon: ListChecks },
   'status-alinare': { to: '/admin/status?empresa=Alinare', label: 'Status', icon: ListChecks },
   'status-novitah': { to: '/admin/status?empresa=Novitah', label: 'Status', icon: ListChecks },
+  kanban: { to: '/admin/kanban', label: 'Kanban', icon: SquareKanban },
   usuarios: { to: '/admin/usuarios', label: 'Usuários', icon: Users },
 };
 
@@ -59,6 +60,7 @@ const ORDEM_NAV: Tela[] = [
   'status-geral',
   'status-alinare',
   'status-novitah',
+  'kanban',
   'usuarios',
 ];
 
@@ -69,6 +71,7 @@ const ORDEM_NAV_ADMIN: Tela[] = [
   'formulario-alinare',
   'formulario-novitah',
   'status-geral',
+  'kanban',
   'usuarios',
 ];
 
@@ -108,6 +111,8 @@ export function telaDaRota(pathname: string, search: string): Tela | null {
         : empresa === 'Novitah'
         ? 'status-novitah'
         : 'status-geral';
+    case '/admin/kanban':
+      return 'kanban';
     case '/admin/usuarios':
       return 'usuarios';
     default:

@@ -16,6 +16,38 @@ export const MOTIVOS = [
 
 export type Motivo = (typeof MOTIVOS)[number];
 
+/** Fluxo de status de uma solicitação de reverso. */
+export const STATUS_SOLICITACAO = [
+  'pendente',
+  'etiqueta_gerada',
+  'postado',
+  'concluido',
+] as const;
+
+export type StatusSolicitacao = (typeof STATUS_SOLICITACAO)[number];
+
+/** Label de exibição de cada status. */
+export const STATUS_LABEL: Record<StatusSolicitacao, string> = {
+  pendente: 'Pendente',
+  etiqueta_gerada: 'Etiqueta Gerada',
+  postado: 'Postado',
+  concluido: 'Concluído',
+};
+
+/** Próximo status no fluxo. null = status final. */
+export function proximoStatus(s: StatusSolicitacao): StatusSolicitacao | null {
+  switch (s) {
+    case 'pendente':
+      return 'etiqueta_gerada';
+    case 'etiqueta_gerada':
+      return 'postado';
+    case 'postado':
+      return 'concluido';
+    default:
+      return null;
+  }
+}
+
 /** Setores disponíveis por empresa */
 export const SETORES = [
   'Comercial Alinare',
@@ -61,8 +93,16 @@ export interface Solicitacao {
   justificativa_outros?: string | null;
   /** Nome de quem autorizou o reverso */
   autorizacao: string;
-  /** Indica se a solicitação já foi resolvida */
-  resolvido: boolean;
+  /** Status atual no fluxo de reverso */
+  status: StatusSolicitacao;
+  /** Quando a etiqueta foi gerada (expedição) */
+  etiqueta_gerada_em?: string | null;
+  /** Quando a cliente postou a mercadoria (comercial) */
+  postado_em?: string | null;
+  /** Quando a solicitação foi concluída (expedição) */
+  concluido_em?: string | null;
+  /** Anotações livres de controle interno */
+  anotacoes?: string | null;
   /** Segundos decorridos entre abertura e envio do formulário */
   tempo_preenchimento_segundos: number;
 }
@@ -85,7 +125,8 @@ export interface FiltrosSolicitacoes {
   empresa?: Empresa | 'Ambas';
   dataInicio?: string; // YYYY-MM-DD
   dataFim?: string;    // YYYY-MM-DD
-  resolvido?: boolean;
+  resolvido?: boolean;       // legado — deprecated, usar status
+  status?: StatusSolicitacao | StatusSolicitacao[];
   buscaCliente?: string;
 }
 
@@ -104,6 +145,7 @@ export type Tela =
   | 'status-geral'
   | 'status-alinare'
   | 'status-novitah'
+  | 'kanban'
   | 'usuarios';
 
 /** Todas as telas disponíveis para seleção no cadastro. */
@@ -119,6 +161,7 @@ export const TELAS: Tela[] = [
   'status-geral',
   'status-alinare',
   'status-novitah',
+  'kanban',
   'usuarios',
 ];
 
@@ -135,6 +178,7 @@ export const TELA_LABEL: Record<Tela, string> = {
   'status-geral': 'Status Geral',
   'status-alinare': 'Status Alinare',
   'status-novitah': 'Status Novitah',
+  kanban: 'Kanban',
   usuarios: 'Usuários (admin)',
 };
 
@@ -167,5 +211,5 @@ export const LEGADO_PERFIL_TELAS: Record<string, Tela[]> = {
   ADMIN: [...TELAS],
   Alinare: ['dashboard-alinare', 'formulario-alinare', 'lista-alinare', 'status-alinare'],
   Novitah: ['dashboard-novitah', 'formulario-novitah', 'lista-novitah', 'status-novitah'],
-  Expedicao: ['dashboard-geral', 'lista-geral', 'status-geral'],
+  Expedicao: ['dashboard-geral', 'lista-geral', 'status-geral', 'kanban'],
 };

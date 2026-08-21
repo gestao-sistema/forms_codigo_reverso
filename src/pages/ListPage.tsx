@@ -1,8 +1,8 @@
-// ── Página da Lista de Registros ─────────────────────────────────────────────
 import { useMemo, useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useSolicitacoes } from '../hooks/useSolicitacoes';
-import { isAdmin, type FiltrosSolicitacoes, type Solicitacao } from '../types';
+import { isAdmin, type FiltrosSolicitacoes, type Solicitacao, type StatusSolicitacao, proximoStatus } from '../types';
+import type { UsuarioAutenticado } from '../types';
 import { useAuth } from '../context/AuthContext';
 import apiService from '../services/apiService';
 
@@ -12,6 +12,15 @@ import RecordDetailModal from '../components/admin/RecordDetailModal';
 
 // Intervalo de polling (15s)
 const POLLING_MS = 15_000;
+
+type FiltroListaUI = 'pendentes' | 'concluidos' | 'todos';
+
+/** Lista é tela da Expedição: pendente→etiqueta_gerada e postado→concluido. */
+function podeAvancarNaLista(u: UsuarioAutenticado | null, status: StatusSolicitacao): boolean {
+  if (!u) return false;
+  if (isAdmin(u)) return true; // admin pode tudo
+  return status === 'pendente' || status === 'postado';
+}
 
 export default function ListPage() {
   const { user } = useAuth();
@@ -38,23 +47,30 @@ export default function ListPage() {
     buscaCliente: '',
   });
 
-  // ── Toggle local (Pendente vs Resolvido) ──
-  const [verResolvidos, setVerResolvidos] = useState(false);
+  // ── Filtro local de status ──
+  const [verFiltro, setVerFiltro] = useState<FiltroListaUI>('pendentes');
 
   // ── Modal de detalhe ──
   const [selectedRecord, setSelectedRecord] = useState<Solicitacao | null>(null);
 
   // Junta filtros da barra + toggle local
-  const filtrosServico: FiltrosSolicitacoes = useMemo(
-    () => ({
+  const filtrosServico: FiltrosSolicitacoes = useMemo(() => {
+    let statusFilter: StatusSolicitacao | StatusSolicitacao[] | undefined;
+    if (verFiltro === 'pendentes') {
+      // Expedição trata tudo que não é 'concluido' como "pendente/ativo" na visão de trabalho
+      statusFilter = ['pendente', 'etiqueta_gerada', 'postado'];
+    } else if (verFiltro === 'concluidos') {
+      statusFilter = 'concluido';
+    }
+
+    return {
       empresa: empresaFixa ?? filtros.empresa,
       dataInicio: filtros.dataInicio || undefined,
       dataFim: filtros.dataFim || undefined,
-      resolvido: verResolvidos,
+      status: statusFilter,
       buscaCliente: filtros.buscaCliente || undefined,
-    }),
-    [filtros, verResolvidos, empresaFixa]
-  );
+    };
+  }, [filtros, verFiltro, empresaFixa]);
 
   const { dados, loading, refreshing, ultimoFetch, refetch } = useSolicitacoes({
     pollingMs: POLLING_MS,
@@ -86,32 +102,39 @@ export default function ListPage() {
     }
   };
 
-  const handleToggleStatus = async (
+  const handleAvancarStatus = async (
     id: string,
-    currentStatus: boolean,
+    currentStatus: StatusSolicitacao,
     e: React.MouseEvent
   ) => {
-    e.stopPropagation(); // Impede click da linha de abrir modal
+    e.stopPropagation();
 
-    // Optimistic UI imediata
-    const acaoDesejada = !currentStatus;
-    const promise = apiService.updateSolicitacao(id, { resolvido: acaoDesejada });
+    const prox = proximoStatus(currentStatus);
+    if (!prox) return; // Não avança se já estiver no final ou for transição não permitida aqui
+
+    // Expedição só pode avançar pendente->etiqueta_gerada e postado->concluido nesta tela
+    if (!podeAvancarNaLista(user, currentStatus)) {
+      toast.error('Apenas o Comercial pode marcar como Postado.');
+      return;
+    }
+
+    const payload: Partial<Solicitacao> = { status: prox };
+    if (prox === 'etiqueta_gerada') payload.etiqueta_gerada_em = new Date().toISOString();
+    if (prox === 'concluido') payload.concluido_em = new Date().toISOString();
+
+    const promise = apiService.updateSolicitacao(id, payload);
 
     toast.promise(
       promise,
       {
         loading: 'Atualizando status...',
         success: () => {
-          refetch(); // Busca dado fresco p/ sumir da lista se necessário
-          return acaoDesejada
-            ? 'Marcado como resolvido.'
-            : 'Marcado como pendente.';
+          refetch();
+          return `Marcado como ${prox.replace('_', ' ')}.`;
         },
         error: 'Erro ao atualizar. Tente novamente.',
       },
-      {
-        style: { minWidth: '220px' },
-      }
+      { style: { minWidth: '220px' } }
     );
   };
 
@@ -137,28 +160,38 @@ export default function ListPage() {
 
       {/* Área da Tabela */}
       <div>
-        {/* Toggle Resolvido/Pendente (Pill) */}
+        {/* Toggle Filtro (Pill) */}
         <div className="flex justify-end mb-4">
           <div className="inline-flex bg-slate-200/50 p-1 rounded-lg">
             <button
-              onClick={() => setVerResolvidos(false)}
+              onClick={() => setVerFiltro('pendentes')}
               className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
-                !verResolvidos
+                verFiltro === 'pendentes'
                   ? 'bg-white text-slate-900 shadow-sm'
                   : 'text-slate-500 hover:text-slate-700'
               }`}
             >
-              Pendentes
+              Ativos
             </button>
             <button
-              onClick={() => setVerResolvidos(true)}
+              onClick={() => setVerFiltro('concluidos')}
               className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
-                verResolvidos
+                verFiltro === 'concluidos'
                   ? 'bg-white text-slate-900 shadow-sm'
                   : 'text-slate-500 hover:text-slate-700'
               }`}
             >
-              Resolvidos
+              Concluídos
+            </button>
+            <button
+              onClick={() => setVerFiltro('todos')}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
+                verFiltro === 'todos'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Todos
             </button>
           </div>
         </div>
@@ -168,9 +201,10 @@ export default function ListPage() {
           dados={dados}
           loading={loading}
           onClickRow={setSelectedRecord}
-          onToggleStatus={handleToggleStatus}
+          onToggleStatus={handleAvancarStatus}
           showDelete={user ? isAdmin(user) : false}
           onDelete={handleDelete}
+          podeAgir={(s) => podeAvancarNaLista(user, s)}
         />
       </div>
 

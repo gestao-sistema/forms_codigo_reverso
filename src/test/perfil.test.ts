@@ -33,13 +33,14 @@ describe('homeDoUsuario', () => {
 describe('navItemsDoUsuario', () => {
   it('admin vê apenas itens gerais (sem variações por empresa)', () => {
     const items = navItemsDoUsuario(usuario(['usuarios']));
-    expect(items.length).toBe(6);
+    expect(items.length).toBe(7);
     expect(items.map(i => i.to)).toEqual([
       '/admin/dashboard',
       '/admin/lista',
       '/admin/alinare',
       '/admin/novitah',
       '/admin/status',
+      '/admin/kanban',
       '/admin/usuarios',
     ]);
     items.forEach(i => expect(i.icon).toBeTruthy());

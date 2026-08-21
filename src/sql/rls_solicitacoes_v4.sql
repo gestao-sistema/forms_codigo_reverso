@@ -107,7 +107,13 @@ CREATE POLICY "update_solicitacoes_admins"
   USING (
     public.is_admin()
     OR public.current_perfil_legacy() = 'Expedicao'
-    OR public.current_telas() @> ARRAY['lista-geral', 'lista-alinare', 'lista-novitah']
+    OR public.current_telas() @> ARRAY['lista-geral']
+    OR public.current_telas() @> ARRAY['lista-alinare']
+    OR public.current_telas() @> ARRAY['lista-novitah']
+    OR public.current_telas() @> ARRAY['status-geral']
+    OR public.current_telas() @> ARRAY['status-alinare']
+    OR public.current_telas() @> ARRAY['status-novitah']
+    OR public.current_telas() @> ARRAY['kanban']
   );
 
 -- 9. Policy DELETE
