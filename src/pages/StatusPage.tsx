@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import apiService from '../services/apiService';
 import type { Solicitacao, StatusSolicitacao } from '../types';
-import { STATUS_LABEL, isAdmin } from '../types';
+import { STATUS_LABEL } from '../types';
 import { useSearchParams } from 'react-router-dom';
 import {
   Clock,
@@ -14,7 +14,6 @@ import {
   Tag,
   PackageCheck,
 } from 'lucide-react';
-import toast from 'react-hot-toast';
 
 const POLLING_MS = 15_000;
 
@@ -66,21 +65,12 @@ export default function StatusPage() {
   const [expandidoId, setExpandidoId] = useState<string | null>(null);
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState<number>(Date.now());
   const [refreshing, setRefreshing] = useState(false);
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
   const mountedRef = useRef(true);
 
   // Permissão pelas telas de status específicas
   const temStatusGeral = user?.telas.includes('status-geral');
   const temStatusAlinare = user?.telas.includes('status-alinare');
   const temStatusNovitah = user?.telas.includes('status-novitah');
-
-  // Só Comercial puro (status-* sem lista-*) ou Admin pode marcar como postado.
-  // Expedição legada tem status-geral nas telas — por isso excluímos quem tem lista-*.
-  const podeMarcarPostado = user
-    ? isAdmin(user) ||
-      (user.telas.some((t) => t.startsWith('status-')) &&
-       !user.telas.some((t) => t.startsWith('lista-')))
-    : false;
 
   // Escopo fixo: quem só tem status de UMA empresa fica travado nela.
   let empresaFixa: 'Alinare' | 'Novitah' | null = null;
@@ -153,24 +143,6 @@ export default function StatusPage() {
 
   const toggleExpandir = (id: string) => {
     setExpandidoId(prev => prev === id ? null : id);
-  };
-
-  /** Comercial marca como postado (só quando etiqueta_gerada). */
-  const handleMarcarPostado = async (id: string) => {
-    setUpdatingId(id);
-    try {
-      await apiService.updateSolicitacao(id, {
-        status: 'postado',
-        postado_em: new Date().toISOString(),
-      });
-      toast.success('Solicitação marcada como postada!');
-      await carregar(true);
-    } catch (err) {
-      console.error(err);
-      toast.error('Erro ao atualizar status.');
-    } finally {
-      setUpdatingId(null);
-    }
   };
 
   // Cores por empresa
@@ -273,7 +245,6 @@ export default function StatusPage() {
             const vis = STATUS_VISUAL[statusReal] || STATUS_VISUAL['pendente'];
             const Icon = vis.icon;
             const isExpanded = expandidoId === item.id;
-            const podeMarcarPostadoBotao = statusReal === 'etiqueta_gerada' && podeMarcarPostado;
 
             return (
               <div
@@ -336,29 +307,6 @@ export default function StatusPage() {
                         </div>
                       )}
                     </div>
-
-                    {/* Botão para comercial marcar postado */}
-                    {podeMarcarPostadoBotao && (
-                      <div className="mt-4 pt-4 border-t border-slate-200">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleMarcarPostado(item.id);
-                          }}
-                          disabled={updatingId === item.id}
-                          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
-                            bg-violet-600 text-white hover:bg-violet-700
-                            disabled:opacity-50 disabled:cursor-not-allowed
-                            transition-colors"
-                        >
-                          <PackageCheck className="w-4 h-4" />
-                          {updatingId === item.id ? 'Atualizando...' : 'Marcar como Postado'}
-                        </button>
-                        <p className="text-xs text-slate-400 mt-1">
-                          Informe que a cliente já postou a mercadoria
-                        </p>
-                      </div>
-                    )}
                   </div>
                 )}
               </div>

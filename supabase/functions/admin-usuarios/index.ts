@@ -22,7 +22,11 @@ const TELAS_VALIDAS = [
   'lista-geral',
   'lista-alinare',
   'lista-novitah',
-  'status',
+  'status-geral',
+  'status-alinare',
+  'status-novitah',
+  'kanban',
+  'kanban-edit',
   'usuarios',
 ];
 
@@ -30,8 +34,24 @@ function normalizarTelas(telas: string[]): string[] {
   return telas.filter((t) => TELAS_VALIDAS.includes(t));
 }
 
-function ehAdmin(telas: string[]): boolean {
-  return telas.includes('usuarios');
+/**
+ * Telas do usuário com fallback legado: se o metadata não tem `telas`
+ * mas tem `perfil` antigo (ADMIN/Alinare/Novitah/Expedicao), deriva delas.
+ * Espelha normalizarTelas() do frontend (authService.ts).
+ */
+function telasDoUsuario(md: Record<string, any> = {}): string[] {
+  if (Array.isArray(md.telas) && md.telas.length > 0) return md.telas as string[];
+  const LEGADO: Record<string, string[]> = {
+    ADMIN: [...TELAS_VALIDAS],
+    Expedicao: ['dashboard-geral', 'lista-geral', 'status-geral', 'kanban', 'kanban-edit'],
+    Alinare: ['dashboard-alinare', 'formulario-alinare', 'lista-alinare', 'status-alinare', 'kanban'],
+    Novitah: ['dashboard-novitah', 'formulario-novitah', 'lista-novitah', 'status-novitah', 'kanban'],
+  };
+  return LEGADO[md.perfil] ?? [];
+}
+
+function ehAdmin(md: Record<string, any> = {}): boolean {
+  return md.perfil === 'ADMIN' || telasDoUsuario(md).includes('usuarios');
 }
 
 serve(async (req: Request) => {
@@ -53,8 +73,8 @@ serve(async (req: Request) => {
     const { data: { user: caller }, error: callerError } = await supabaseClient.auth.getUser();
     if (callerError || !caller) throw new Error('Acesso negado: token inválido.');
 
-    const callerTelas = caller.user_metadata?.telas ?? [];
-    if (!ehAdmin(callerTelas)) {
+    const callerMd = caller.user_metadata ?? {};
+    if (!ehAdmin(callerMd)) {
       throw new Error('Acesso negado: requer permissão de administração (tela "usuarios").');
     }
 

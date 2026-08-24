@@ -2,20 +2,30 @@ import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import apiService from '../services/apiService';
 import type { Solicitacao, StatusSolicitacao } from '../types';
-import { STATUS_SOLICITACAO, STATUS_LABEL, proximoStatus, isAdmin } from '../types';
+import { STATUS_SOLICITACAO, STATUS_LABEL, proximoStatus, statusAnterior, movimentoValido, isAdmin } from '../types';
 import { useSearchParams } from 'react-router-dom';
 import {
   Clock,
   CheckCircle2,
   Tag,
   PackageCheck,
-  ArrowRight,
   Filter,
   StickyNote,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { COR_EMPRESA } from '../services/analytics';
 import RecordDetailModal from '../components/admin/RecordDetailModal';
+import {
+  DndContext,
+  useDroppable,
+  useDraggable,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragOverlay,
+} from '@dnd-kit/core';
+import type { DragEndEvent } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 
 const POLLING_MS = 15_000;
 
@@ -29,26 +39,142 @@ const STATUS_VISUAL: Record<
   concluido: { bg: 'bg-emerald-50/50', headerBg: 'bg-emerald-100', text: 'text-emerald-700', border: 'border-emerald-200', icon: CheckCircle2 },
 };
 
+function KanbanCard({ item, onClick }: { item: Solicitacao; onClick?: () => void }) {
+  return (
+    <div
+      onClick={onClick}
+      className="bg-white rounded-lg border border-slate-200 p-3 shadow-sm space-y-2
+        cursor-pointer hover:border-slate-300 hover:shadow transition-all"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-medium text-sm text-slate-900 truncate">
+          {item.nome_cliente}
+        </span>
+        <span className="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 font-mono shrink-0">
+          #{item.codigo_cliente}
+        </span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span
+          className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold text-white"
+          style={{ backgroundColor: COR_EMPRESA[item.empresa] }}
+        >
+          {item.empresa}
+        </span>
+        <span className="text-xs text-slate-500 truncate">{item.motivo}</span>
+      </div>
+      <div className="flex items-center justify-between text-xs text-slate-400">
+        <span>
+          {new Date(item.data_solicitacao).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
+        </span>
+        {item.anotacoes && (
+          <span className="inline-flex items-center gap-1 text-amber-500" title="Possui anotações">
+            <StickyNote className="w-3 h-3" />
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DraggableKanbanCard({ item, onClick, disabled }: { item: Solicitacao; onClick: () => void; disabled: boolean }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: item.id,
+    data: { item },
+    disabled,
+  });
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    opacity: isDragging ? 0.4 : 1,
+    zIndex: isDragging ? 50 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <KanbanCard item={item} onClick={onClick} />
+    </div>
+  );
+}
+
+function KanbanColumn({
+  status,
+  items,
+  onCardClick,
+  podeArraste,
+}: {
+  status: StatusSolicitacao;
+  items: Solicitacao[];
+  onCardClick: (item: Solicitacao) => void;
+  podeArraste: boolean;
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: status,
+  });
+
+  const vis = STATUS_VISUAL[status];
+  const Icon = vis.icon;
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`min-w-0 flex-1 sm:basis-0 basis-[85vw] shrink-0 sm:shrink rounded-xl border flex flex-col h-full min-h-0 transition-colors
+        ${vis.border} ${isOver ? 'bg-slate-200/50 ring-2 ring-blue-400/30' : vis.bg}
+      `}
+    >
+      <div className={`px-4 py-3 rounded-t-xl ${vis.headerBg} flex items-center justify-between shrink-0`}>
+        <div className={`flex items-center gap-2 font-semibold text-sm ${vis.text}`}>
+          <Icon className="w-4 h-4" />
+          {STATUS_LABEL[status]}
+        </div>
+        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${vis.text} bg-white/60`}>
+          {items.length}
+        </span>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-3 space-y-3 min-h-0">
+        {items.length === 0 && !isOver && (
+          <p className="text-xs text-slate-400 text-center py-4">Nenhuma solicitação</p>
+        )}
+        {items.map((item) => (
+          <DraggableKanbanCard
+            key={item.id}
+            item={item}
+            onClick={() => onCardClick(item)}
+            disabled={!podeArraste}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function KanbanPage() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryEmpresa = searchParams.get('empresa') as 'Alinare' | 'Novitah' | null;
   const [solicitacoes, setSolicitacoes] = useState<Solicitacao[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Solicitacao | null>(null);
+  const [draggedItem, setDraggedItem] = useState<Solicitacao | null>(null);
   const mountedRef = useRef(true);
 
-  // Escopo de empresa (deriva das demais telas do usuário)
+  // Requer pressionar por um pequeno tempo/distância para não conflitar com click de abrir modal
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    })
+  );
+
   const temGeral =
     user?.telas.includes('lista-geral') ||
     user?.telas.includes('status-geral') ||
     user?.telas.includes('dashboard-geral') ||
     user?.telas.includes('usuarios');
-  const temAlinare =
-    user?.telas.some((t) => t.includes('alinare'));
-  const temNovitah =
-    user?.telas.some((t) => t.includes('novitah'));
+  const temAlinare = user?.telas.some((t) => t.includes('alinare'));
+  const temNovitah = user?.telas.some((t) => t.includes('novitah'));
 
   let empresaFixa: 'Alinare' | 'Novitah' | null = null;
   if (!temGeral) {
@@ -62,7 +188,7 @@ export default function KanbanPage() {
     if (!mountedRef.current) return;
     if (!isPoll) setIsLoading(true);
     try {
-      const dados = await apiService.getSolicitacoes({ empresa: empresaFixa });
+      const dados = await apiService.getSolicitacoes({ empresa: empresaFixa, limiteConcluidos: 50 });
       if (mountedRef.current) setSolicitacoes(dados);
     } catch (err) {
       console.error(err);
@@ -78,47 +204,58 @@ export default function KanbanPage() {
     return () => { mountedRef.current = false; clearInterval(id); };
   }, [carregar]);
 
-  // Permissões de transição: expedição = lista-*; comercial puro = status-* sem lista-*;
-  // admin pode tudo.
   const admin = user ? isAdmin(user) : false;
-  const ehExpedicao = admin || user?.telas.some((t) => t.startsWith('lista-')) || false;
-  const ehComercialPuro = admin || (
-    user?.telas.some((t) => t.startsWith('status-')) &&
-    !user?.telas.some((t) => t.startsWith('lista-'))
-  ) || false;
+  const podeEditarKanban = admin || user?.telas.includes('kanban-edit') || false;
 
-  const podeAvancar = (status: StatusSolicitacao): boolean => {
-    if (status === 'pendente' && ehExpedicao) return true;      // expedição: gerar etiqueta
-    if (status === 'etiqueta_gerada' && ehComercialPuro) return true; // comercial: marcar postado
-    if (status === 'postado' && ehExpedicao) return true;       // expedição: concluir
-    return false;
-  };
+  const handleDragEnd = async (event: DragEndEvent) => {
+    setDraggedItem(null);
+    const { active, over } = event;
+    if (!over) return; // soltou fora de qualquer coluna
 
-  const labelAcao = (status: StatusSolicitacao): string => {
-    if (status === 'pendente') return 'Etiqueta Gerada';
-    if (status === 'etiqueta_gerada') return 'Marcar postado';
-    if (status === 'postado') return 'Concluir';
-    return '';
-  };
+    const draggedCard = active.data.current?.item as Solicitacao;
+    if (!draggedCard) return;
 
-  const handleAvancar = async (id: string, status: StatusSolicitacao) => {
-    const prox = proximoStatus(status);
-    if (!prox) return;
-    setUpdatingId(id);
+    const sourceStatus = draggedCard.status || (draggedCard.resolvido ? 'concluido' : 'pendente');
+    const destStatus = over.id as StatusSolicitacao;
+
+    if (sourceStatus === destStatus) return; // não mudou
+
+    // Validações: movimento válido (uma etapa pra frente OU pra trás)
+    if (!movimentoValido(sourceStatus, destStatus)) {
+      toast.error(`Movimento inválido. Só pode mover uma etapa por vez.`);
+      return;
+    }
+
     try {
-      const payload: Partial<Solicitacao> = { status: prox };
-      if (prox === 'etiqueta_gerada') payload.etiqueta_gerada_em = new Date().toISOString();
-      if (prox === 'postado') payload.postado_em = new Date().toISOString();
-      if (prox === 'concluido') payload.concluido_em = new Date().toISOString();
+      // Optimistic update
+      setSolicitacoes((prev) =>
+        prev.map((s) => (s.id === draggedCard.id ? { ...s, status: destStatus } : s))
+      );
 
-      await apiService.updateSolicitacao(id, payload);
-      toast.success(`Movido para ${STATUS_LABEL[prox]}`);
-      await carregar(true);
+      const payload: Partial<Solicitacao> = { status: destStatus };
+
+      // Limpa timestamp ao voltar etapa
+      if (destStatus === statusAnterior('etiqueta_gerada')) {
+        payload.etiqueta_gerada_em = null; // voltou de etiqueta_gerada para pendente
+      }
+      if (destStatus === statusAnterior('postado')) {
+        payload.postado_em = null; // voltou de postado para etiqueta_gerada
+      }
+      if (destStatus === statusAnterior('concluido')) {
+        payload.concluido_em = null; // voltou de concluido para postado
+      }
+
+      // Seta timestamp ao avançar
+      if (destStatus === 'etiqueta_gerada') payload.etiqueta_gerada_em = new Date().toISOString();
+      if (destStatus === 'postado') payload.postado_em = new Date().toISOString();
+      if (destStatus === 'concluido') payload.concluido_em = new Date().toISOString();
+
+      await apiService.updateSolicitacao(draggedCard.id, payload, user);
+      toast.success(`Movido para ${STATUS_LABEL[destStatus]}`);
     } catch (err) {
       console.error(err);
       toast.error('Erro ao atualizar status.');
-    } finally {
-      setUpdatingId(null);
+      await carregar(true); // rollback
     }
   };
 
@@ -139,11 +276,10 @@ export default function KanbanPage() {
 
   return (
     <div className="flex flex-col h-[calc(100dvh-5.5rem)] sm:h-[calc(100dvh-6.5rem)] lg:h-[calc(100vh-4rem)] gap-4 min-h-0">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Kanban</h1>
-          <p className="text-sm text-slate-500 mt-1">Visão geral do fluxo de solicitações</p>
+          <p className="text-sm text-slate-500 mt-1">Arraste os cards para avançar no fluxo (se tiver permissão).</p>
         </div>
         {temGeral && (
           <div className="relative sm:min-w-[160px]">
@@ -167,99 +303,35 @@ export default function KanbanPage() {
       {isLoading ? (
         <div className="text-center py-12 text-slate-400">Carregando...</div>
       ) : (
-        <div className="flex gap-4 overflow-x-auto pb-4 flex-1 min-h-0">
-          {STATUS_SOLICITACAO.map((status) => {
-            const vis = STATUS_VISUAL[status];
-            const Icon = vis.icon;
-            const items = colunas[status];
-
-            return (
-              <div
+        <DndContext
+          sensors={sensors}
+          onDragStart={(e) => setDraggedItem(e.active.data.current?.item)}
+          onDragEnd={handleDragEnd}
+          onDragCancel={() => setDraggedItem(null)}
+        >
+          <div className="flex sm:flex-row flex-col gap-4 overflow-x-auto sm:overflow-visible pb-4 sm:pb-0 flex-1 min-h-0">
+            {STATUS_SOLICITACAO.map((status) => (
+              <KanbanColumn
                 key={status}
-                className={`shrink-0 w-72 sm:w-80 rounded-xl border ${vis.border} ${vis.bg} flex flex-col h-full min-h-0`}
-              >
-                {/* Header coluna */}
-                <div className={`px-4 py-3 rounded-t-xl ${vis.headerBg} flex items-center justify-between shrink-0`}>
-                  <div className={`flex items-center gap-2 font-semibold text-sm ${vis.text}`}>
-                    <Icon className="w-4 h-4" />
-                    {STATUS_LABEL[status]}
-                  </div>
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${vis.text} bg-white/60`}>
-                    {items.length}
-                  </span>
-                </div>
-
-                {/* Cards */}
-                <div className="flex-1 overflow-y-auto p-3 space-y-3 min-h-0">
-                  {items.length === 0 ? (
-                    <p className="text-xs text-slate-400 text-center py-4">Nenhuma solicitação</p>
-                  ) : (
-                    items.map((item) => (
-                      <div
-                        key={item.id}
-                        onClick={() => setSelected(item)}
-                        className="bg-white rounded-lg border border-slate-200 p-3 shadow-sm space-y-2
-                          cursor-pointer hover:border-slate-300 hover:shadow transition-all"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="font-medium text-sm text-slate-900 truncate">
-                            {item.nome_cliente}
-                          </span>
-                          <span className="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 font-mono shrink-0">
-                            #{item.codigo_cliente}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold text-white"
-                            style={{ backgroundColor: COR_EMPRESA[item.empresa] }}
-                          >
-                            {item.empresa}
-                          </span>
-                          <span className="text-xs text-slate-500 truncate">{item.motivo}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-xs text-slate-400">
-                          <span>
-                            {new Date(item.data_solicitacao).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
-                          </span>
-                          {item.anotacoes && (
-                            <span className="inline-flex items-center gap-1 text-amber-500" title="Possui anotações">
-                              <StickyNote className="w-3 h-3" />
-                            </span>
-                          )}
-                        </div>
-
-                        {podeAvancar(status) && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleAvancar(item.id, status);
-                            }}
-                            disabled={updatingId === item.id}
-                            className="w-full mt-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium
-                              bg-slate-900 text-white hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                          >
-                            {updatingId === item.id ? 'Atualizando...' : labelAcao(status)}
-                            {updatingId !== item.id && <ArrowRight className="w-3 h-3" />}
-                          </button>
-                        )}
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                status={status}
+                items={colunas[status]}
+                onCardClick={setSelected}
+                podeArraste={podeEditarKanban}
+              />
+            ))}
+          </div>
+          <DragOverlay>
+            {draggedItem ? <KanbanCard item={draggedItem} /> : null}
+          </DragOverlay>
+        </DndContext>
       )}
 
-      {/* Modal de detalhes (clique no card) */}
       <RecordDetailModal
         isOpen={!!selected}
         solicitacao={selected}
         onClose={() => {
           setSelected(null);
-          carregar(true); // puxa anotações atualizadas
+          carregar(true);
         }}
       />
     </div>

@@ -30,6 +30,21 @@ export interface IAuthService {
 // ── Helpers ─────────────────────────────────────────────────────────────────────
 
 /**
+ * Extrai a mensagem de erro real do corpo da resposta quando a Edge Function
+ * devolve non-2xx (o SDK só expõe "Edge Function returned a non-2xx status code").
+ */
+async function msgErroFuncoes(error: unknown): Promise<string> {
+  const ctx = (error as any)?.context;
+  if (ctx?.json) {
+    try {
+      const body = await ctx.json();
+      if (body?.error) return body.error;
+    } catch { /* corpo não é JSON */ }
+  }
+  return (error as any)?.message ?? 'Erro desconhecido.';
+}
+
+/**
  * Normaliza telas vindas do metadata. Se vier `perfil` legado (sem `telas`),
  * migra para as telas equivalentes.
  */
@@ -98,8 +113,15 @@ const authService: IAuthService = {
       body: { action: 'list' },
     });
 
-    if (error) throw new AuthError(error.message);
-    return data.data.map((u: any) => toUsuario(u));
+    if (error) {
+      const msg = await msgErroFuncoes(error);
+      // Fallback local caso a Edge Function esteja fora do ar
+      if (msg.includes('fetch') || msg.includes('network') || msg.includes('ECONNREFUSED')) {
+        throw new AuthError('Serviço de usuários indisponível no momento.');
+      }
+      throw new AuthError(msg);
+    }
+    return (data?.data ?? []).map((u: any) => toUsuario(u));
   },
 
   async criarUsuario(data) {
@@ -107,7 +129,7 @@ const authService: IAuthService = {
       body: { action: 'create', payload: { ...data, usuario: data.usuario.trim().toLowerCase() } },
     });
 
-    if (error) throw new AuthError(error.message);
+    if (error) throw new AuthError(await msgErroFuncoes(error));
     return toUsuario(result.data);
   },
 
@@ -122,7 +144,7 @@ const authService: IAuthService = {
       body: { action: 'update', payload },
     });
 
-    if (error) throw new AuthError(error.message);
+    if (error) throw new AuthError(await msgErroFuncoes(error));
     return toUsuario(result.data);
   },
 

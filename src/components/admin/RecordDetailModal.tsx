@@ -1,11 +1,12 @@
 // ── Modal de Detalhes da Solicitação ─────────────────────────────────────────
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { X, Timer, Calendar, User, Package, MapPin, Building2, StickyNote } from 'lucide-react';
-import type { Solicitacao } from '../../types';
+import { X, Timer, Calendar, User, Package, MapPin, Building2, StickyNote, History } from 'lucide-react';
+import type { Solicitacao, SolicitacaoHistorico } from '../../types';
 import { STATUS_LABEL } from '../../types';
 import { formatarTempo } from '../../services/analytics';
 import apiService from '../../services/apiService';
+import { useAuth } from '../../context/AuthContext';
 
 interface RecordDetailModalProps {
   isOpen: boolean;
@@ -18,13 +19,29 @@ export default function RecordDetailModal({
   solicitacao,
   onClose,
 }: RecordDetailModalProps) {
+  const { user } = useAuth();
   const [anotacoes, setAnotacoes] = useState('');
   const [salvandoAnot, setSalvandoAnot] = useState(false);
+  const [historico, setHistorico] = useState<SolicitacaoHistorico[]>([]);
+  const [carregandoHist, setCarregandoHist] = useState(false);
 
   // Sincroniza textarea quando abre/troca de registro
   useEffect(() => {
     setAnotacoes(solicitacao?.anotacoes ?? '');
   }, [solicitacao?.id, solicitacao?.anotacoes]);
+
+  // Busca histórico quando o modal abre
+  useEffect(() => {
+    if (!isOpen || !solicitacao?.id) return;
+    let montado = true;
+    setCarregandoHist(true);
+    apiService
+      .getHistorico(solicitacao.id)
+      .then((h) => { if (montado) setHistorico(h); })
+      .catch(() => { if (montado) setHistorico([]); })
+      .finally(() => { if (montado) setCarregandoHist(false); });
+    return () => { montado = false; };
+  }, [isOpen, solicitacao?.id]);
 
   // Fechar com tecla esc
   useEffect(() => {
@@ -48,11 +65,16 @@ export default function RecordDetailModal({
   const salvarAnotacoes = async () => {
     setSalvandoAnot(true);
     try {
-      await apiService.updateSolicitacao(solicitacao.id, {
-        anotacoes: anotacoes.trim() || null,
-      });
+      await apiService.updateSolicitacao(
+        solicitacao.id,
+        { anotacoes: anotacoes.trim() || null },
+        user
+      );
       solicitacao.anotacoes = anotacoes.trim() || null;
       toast.success('Anotações salvas.');
+      // Atualiza histórico local
+      const h = await apiService.getHistorico(solicitacao.id);
+      setHistorico(h);
     } catch {
       toast.error('Erro ao salvar anotações.');
     } finally {
@@ -191,7 +213,36 @@ export default function RecordDetailModal({
             </div>
           </div>
 
-          {/* Seção 4: Anotações internas */}
+          {/* Seção 4: Histórico de alterações */}
+          <div className="mb-6">
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-800 mb-3">
+              <History className="w-4 h-4 text-slate-400" /> Histórico
+            </h3>
+            {carregandoHist ? (
+              <p className="text-xs text-slate-400">Carregando histórico...</p>
+            ) : historico.length === 0 ? (
+              <p className="text-xs text-slate-400">Nenhum movimento registrado.</p>
+            ) : (
+              <ol className="border-l-2 border-slate-100 ml-2 space-y-3">
+                {historico.map((h) => (
+                  <li key={h.id} className="pl-4 relative">
+                    <span className="absolute -left-[5px] top-1.5 w-2 h-2 rounded-full bg-slate-300" />
+                    <p className="text-sm text-slate-800">
+                      <span className="font-medium">{h.user_nome}</span> — {h.acao}
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      {new Date(h.created_at).toLocaleString('pt-BR', {
+                        dateStyle: 'short',
+                        timeStyle: 'short',
+                      })}
+                    </p>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </div>
+
+          {/* Seção 5: Anotações internas */}
           <div className="mb-6">
             <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-800 mb-3">
               <StickyNote className="w-4 h-4 text-slate-400" /> Anotações

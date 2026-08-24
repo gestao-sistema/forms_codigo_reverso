@@ -21,6 +21,11 @@ export function homeDoUsuario(user: UsuarioAutenticado): string {
   if (user.telas.includes('status-alinare')) return '/admin/status?empresa=Alinare';
   if (user.telas.includes('status-novitah')) return '/admin/status?empresa=Novitah';
 
+  // Kanban como última opção antes do fallback
+  if (user.telas.includes('kanban') || user.telas.includes('kanban-edit')) {
+    return '/admin/kanban';
+  }
+
   return '/admin/dashboard';
 }
 
@@ -44,6 +49,8 @@ const NAV_MAP: Record<Tela, NavItem> = {
   'status-alinare': { to: '/admin/status?empresa=Alinare', label: 'Status', icon: ListChecks },
   'status-novitah': { to: '/admin/status?empresa=Novitah', label: 'Status', icon: ListChecks },
   kanban: { to: '/admin/kanban', label: 'Kanban', icon: SquareKanban },
+  // Permissão de edição, não uma tela navegável — mesma rota do Kanban.
+  'kanban-edit': { to: '/admin/kanban', label: 'Kanban', icon: SquareKanban },
   usuarios: { to: '/admin/usuarios', label: 'Usuários', icon: Users },
 };
 

@@ -167,6 +167,83 @@ describe('apiService.updateSolicitacao', () => {
 
     await expect(apiService.updateSolicitacao('uuid-1', {})).rejects.toThrow('update failed');
   });
+
+  it('com user e status: registra histórico', async () => {
+    const mockUpdate = chainBuilder({
+      data: { ...solicitacaoMock, status: 'etiqueta_gerada' },
+      error: null,
+    });
+    const mockInsert = chainBuilder({ data: [{ id: 'hist-1' }], error: null });
+
+    let callCount = 0;
+    (supabase.from as ReturnType<typeof vi.fn>).mockImplementation(() => {
+      callCount++;
+      return callCount === 1 ? mockUpdate : mockInsert;
+    });
+
+    const user = { id: 'user-1', nome: 'João Silva', usuario: 'joao', telas: ['lista-geral'] };
+    const res = await apiService.updateSolicitacao(
+      'uuid-1',
+      { status: 'etiqueta_gerada' },
+      user
+    );
+
+    expect(res.status).toBe('etiqueta_gerada');
+    expect(mockUpdate.eq).toHaveBeenCalledWith('id', 'uuid-1');
+    expect(mockInsert.insert).toHaveBeenCalled();
+    const inserted = mockInsert.insert.mock.calls[0][0];
+    expect(inserted.solicitacao_id).toBe('uuid-1');
+    expect(inserted.user_nome).toBe('João Silva');
+    expect(inserted.acao).toContain('Etiqueta Gerada');
+  });
+
+  it('com user e anotações: registra histórico', async () => {
+    const mockUpdate = chainBuilder({
+      data: { ...solicitacaoMock, anotacoes: 'Nova anotação' },
+      error: null,
+    });
+    const mockInsert = chainBuilder({ data: [{ id: 'hist-2' }], error: null });
+
+    let callCount = 0;
+    (supabase.from as ReturnType<typeof vi.fn>).mockImplementation(() => {
+      callCount++;
+      return callCount === 1 ? mockUpdate : mockInsert;
+    });
+
+    const user = { id: 'user-1', nome: 'Maria Santos', usuario: 'maria', telas: ['status-geral'] };
+    await apiService.updateSolicitacao(
+      'uuid-1',
+      { anotacoes: 'Nova anotação' },
+      user
+    );
+
+    expect(mockInsert.insert).toHaveBeenCalled();
+    const inserted = mockInsert.insert.mock.calls[0][0];
+    expect(inserted.solicitacao_id).toBe('uuid-1');
+    expect(inserted.user_nome).toBe('Maria Santos');
+    expect(inserted.acao).toBe('Anotação atualizada');
+  });
+
+  it('sem user: não registra histórico', async () => {
+    const mockUpdate = chainBuilder({ data: { ...solicitacaoMock, status: 'concluido' }, error: null });
+    (supabase.from as ReturnType<typeof vi.fn>).mockImplementation(() => mockUpdate);
+
+    await apiService.updateSolicitacao('uuid-1', { status: 'concluido' });
+
+    expect(mockUpdate.insert).not.toHaveBeenCalled();
+  });
+});
+
+describe('apiService.getHistorico', () => {
+  it('retorna array de historico', async () => {
+    const mock = chainBuilder({ data: [{ id: 'hist-1', acao: 'Teste' }], error: null });
+    (supabase.from as ReturnType<typeof vi.fn>).mockImplementation(() => mock);
+
+    const res = await apiService.getHistorico('uuid-1');
+    expect(res).toHaveLength(1);
+    expect(res[0].id).toBe('hist-1');
+    expect(mock.eq).toHaveBeenCalledWith('solicitacao_id', 'uuid-1');
+  });
 });
 
 describe('apiService.getSolicitacaoById', () => {

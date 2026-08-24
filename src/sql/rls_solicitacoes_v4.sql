@@ -2,6 +2,11 @@
 -- RLS v4: Row Level Security - Híbrido (Perfil Legado + Telas)
 -- ============================================================
 
+-- 0. Grants (tabelas recriadas via DROP+CREATE nascem sem permissões;
+--    sem GRANT o PostgREST nega antes mesmo de avaliar as policies)
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE solicitacoes_reverso TO authenticated;
+GRANT SELECT, INSERT ON TABLE solicitacoes_reverso TO anon;
+
 -- 1. Habilita RLS
 ALTER TABLE solicitacoes_reverso ENABLE ROW LEVEL SECURITY;
 
@@ -58,7 +63,7 @@ AS $$
     WHEN public.current_perfil_legacy() = 'Expedicao' THEN NULL
 
     -- Telas gerais novas veem tudo
-    WHEN public.current_telas() @> ARRAY['dashboard-geral'] OR public.current_telas() @> ARRAY['lista-geral'] OR public.current_telas() @> ARRAY['status-geral'] THEN NULL
+    WHEN public.current_telas() @> ARRAY['dashboard-geral'] OR public.current_telas() @> ARRAY['lista-geral'] OR public.current_telas() @> ARRAY['status-geral'] OR public.current_telas() @> ARRAY['kanban'] THEN NULL
 
     -- Escopo Alinare (Novo e Legado)
     WHEN public.current_perfil_legacy() = 'Alinare' THEN 'Alinare'
@@ -114,6 +119,7 @@ CREATE POLICY "update_solicitacoes_admins"
     OR public.current_telas() @> ARRAY['status-alinare']
     OR public.current_telas() @> ARRAY['status-novitah']
     OR public.current_telas() @> ARRAY['kanban']
+    OR public.current_telas() @> ARRAY['kanban-edit']
   );
 
 -- 9. Policy DELETE

@@ -48,6 +48,28 @@ export function proximoStatus(s: StatusSolicitacao): StatusSolicitacao | null {
   }
 }
 
+/** Status anterior no fluxo. null = status inicial. */
+export function statusAnterior(s: StatusSolicitacao): StatusSolicitacao | null {
+  switch (s) {
+    case 'etiqueta_gerada':
+      return 'pendente';
+    case 'postado':
+      return 'etiqueta_gerada';
+    case 'concluido':
+      return 'postado';
+    default:
+      return null;
+  }
+}
+
+/** Movimento válido no DnD: exatamente uma etapa à frente ou uma atrás. */
+export function movimentoValido(
+  origem: StatusSolicitacao,
+  destino: StatusSolicitacao
+): boolean {
+  return destino === proximoStatus(origem) || destino === statusAnterior(origem);
+}
+
 /** Setores disponíveis por empresa */
 export const SETORES = [
   'Comercial Alinare',
@@ -128,6 +150,8 @@ export interface FiltrosSolicitacoes {
   resolvido?: boolean;       // legado — deprecated, usar status
   status?: StatusSolicitacao | StatusSolicitacao[];
   buscaCliente?: string;
+  /** Limita registros 'concluido' retornados (proteção contra acúmulo). */
+  limiteConcluidos?: number;
 }
 
 // ── Autenticação e perfis de acesso ──────────────────────────────────────────
@@ -146,6 +170,7 @@ export type Tela =
   | 'status-alinare'
   | 'status-novitah'
   | 'kanban'
+  | 'kanban-edit'
   | 'usuarios';
 
 /** Todas as telas disponíveis para seleção no cadastro. */
@@ -162,6 +187,7 @@ export const TELAS: Tela[] = [
   'status-alinare',
   'status-novitah',
   'kanban',
+  'kanban-edit',
   'usuarios',
 ];
 
@@ -179,6 +205,7 @@ export const TELA_LABEL: Record<Tela, string> = {
   'status-alinare': 'Status Alinare',
   'status-novitah': 'Status Novitah',
   kanban: 'Kanban',
+  'kanban-edit': 'Editar Kanban',
   usuarios: 'Usuários (admin)',
 };
 
@@ -206,10 +233,19 @@ export function isAdmin(u: Pick<Usuario, 'telas'>): boolean {
   return u.telas.includes('usuarios');
 }
 
+/** Item do histórico de auditoria de uma solicitação. */
+export interface SolicitacaoHistorico {
+  id: string;
+  solicitacao_id: string;
+  user_nome: string;
+  acao: string;
+  created_at: string; // ISO 8601
+}
+
 /** Mapeamento legado: perfil antigo → telas equivalentes (migração). */
 export const LEGADO_PERFIL_TELAS: Record<string, Tela[]> = {
   ADMIN: [...TELAS],
   Alinare: ['dashboard-alinare', 'formulario-alinare', 'lista-alinare', 'status-alinare'],
   Novitah: ['dashboard-novitah', 'formulario-novitah', 'lista-novitah', 'status-novitah'],
-  Expedicao: ['dashboard-geral', 'lista-geral', 'status-geral', 'kanban'],
+  Expedicao: ['dashboard-geral', 'lista-geral', 'status-geral', 'kanban', 'kanban-edit'],
 };

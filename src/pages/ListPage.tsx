@@ -1,8 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useSolicitacoes } from '../hooks/useSolicitacoes';
-import { isAdmin, type FiltrosSolicitacoes, type Solicitacao, type StatusSolicitacao, proximoStatus } from '../types';
-import type { UsuarioAutenticado } from '../types';
+import { isAdmin, type FiltrosSolicitacoes, type Solicitacao, type StatusSolicitacao } from '../types';
 import { useAuth } from '../context/AuthContext';
 import apiService from '../services/apiService';
 
@@ -14,13 +13,6 @@ import RecordDetailModal from '../components/admin/RecordDetailModal';
 const POLLING_MS = 15_000;
 
 type FiltroListaUI = 'pendentes' | 'concluidos' | 'todos';
-
-/** Lista é tela da Expedição: pendente→etiqueta_gerada e postado→concluido. */
-function podeAvancarNaLista(u: UsuarioAutenticado | null, status: StatusSolicitacao): boolean {
-  if (!u) return false;
-  if (isAdmin(u)) return true; // admin pode tudo
-  return status === 'pendente' || status === 'postado';
-}
 
 export default function ListPage() {
   const { user } = useAuth();
@@ -57,7 +49,6 @@ export default function ListPage() {
   const filtrosServico: FiltrosSolicitacoes = useMemo(() => {
     let statusFilter: StatusSolicitacao | StatusSolicitacao[] | undefined;
     if (verFiltro === 'pendentes') {
-      // Expedição trata tudo que não é 'concluido' como "pendente/ativo" na visão de trabalho
       statusFilter = ['pendente', 'etiqueta_gerada', 'postado'];
     } else if (verFiltro === 'concluidos') {
       statusFilter = 'concluido';
@@ -100,42 +91,6 @@ export default function ListPage() {
     } catch {
       toast.error('Erro ao apagar. Tente novamente.');
     }
-  };
-
-  const handleAvancarStatus = async (
-    id: string,
-    currentStatus: StatusSolicitacao,
-    e: React.MouseEvent
-  ) => {
-    e.stopPropagation();
-
-    const prox = proximoStatus(currentStatus);
-    if (!prox) return; // Não avança se já estiver no final ou for transição não permitida aqui
-
-    // Expedição só pode avançar pendente->etiqueta_gerada e postado->concluido nesta tela
-    if (!podeAvancarNaLista(user, currentStatus)) {
-      toast.error('Apenas o Comercial pode marcar como Postado.');
-      return;
-    }
-
-    const payload: Partial<Solicitacao> = { status: prox };
-    if (prox === 'etiqueta_gerada') payload.etiqueta_gerada_em = new Date().toISOString();
-    if (prox === 'concluido') payload.concluido_em = new Date().toISOString();
-
-    const promise = apiService.updateSolicitacao(id, payload);
-
-    toast.promise(
-      promise,
-      {
-        loading: 'Atualizando status...',
-        success: () => {
-          refetch();
-          return `Marcado como ${prox.replace('_', ' ')}.`;
-        },
-        error: 'Erro ao atualizar. Tente novamente.',
-      },
-      { style: { minWidth: '220px' } }
-    );
   };
 
   return (
@@ -201,10 +156,9 @@ export default function ListPage() {
           dados={dados}
           loading={loading}
           onClickRow={setSelectedRecord}
-          onToggleStatus={handleAvancarStatus}
           showDelete={user ? isAdmin(user) : false}
           onDelete={handleDelete}
-          podeAgir={(s) => podeAvancarNaLista(user, s)}
+          podeAgir={() => false}
         />
       </div>
 
