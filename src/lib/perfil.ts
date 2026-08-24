@@ -88,7 +88,7 @@ export function navItemsDoUsuario(user: UsuarioAutenticado): NavItem[] {
     return ORDEM_NAV_ADMIN.map((t) => NAV_MAP[t]);
   }
 
-  const telas = user.telas.filter((t) => t !== 'usuarios');
+  const telas: Tela[] = user.telas.filter((t) => t !== 'usuarios');
   return ORDEM_NAV.filter((t) => telas.includes(t)).map((t) => NAV_MAP[t]);
 }
 

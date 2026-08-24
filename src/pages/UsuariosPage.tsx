@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { Loader2, Plus, Pencil, Trash2, X, UserPlus } from 'lucide-react';
 import authService from '../services/authService';
 import { useAuth } from '../context/AuthContext';
-import { TELAS, TELA_LABEL, isAdmin } from '../types';
+import { TELA_LABEL, isAdmin } from '../types';
 import type { Usuario, Tela, UpdateUsuarioPayload } from '../types';
 
 type FormState = {
@@ -284,7 +284,7 @@ export default function UsuariosPage() {
                 </label>
                 {editarSelf ? (
                   <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
-                    {isAdmin(user) ? 'Administrador (acesso total)' : `${user?.telas.length || 0} tela(s) selecionada(s)`}
+                    {user && isAdmin(user) ? 'Administrador (acesso total)' : `${user?.telas.length || 0} tela(s) selecionada(s)`}
                   </div>
                 ) : (
                   <div className="space-y-3 rounded-lg border border-slate-200 p-3">

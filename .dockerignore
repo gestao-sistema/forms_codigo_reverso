@@ -13,8 +13,6 @@ supabase/
 *.sql
 run-sql*.cjs
 migrar_usuarios.ts
-vite.config.ts
-tsconfig*.json
 .oxlintrc.json
 *.test.ts
 *.test.tsx

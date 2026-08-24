@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import Sidebar from './Sidebar';
-import PerfilButton from '../auth/PerfilButton';
 
 export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);

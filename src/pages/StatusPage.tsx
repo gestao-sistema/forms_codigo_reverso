@@ -2,7 +2,6 @@ import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import apiService from '../services/apiService';
 import type { Solicitacao, StatusSolicitacao } from '../types';
-import { STATUS_LABEL } from '../types';
 import { useSearchParams } from 'react-router-dom';
 import {
   Clock,
@@ -64,7 +63,6 @@ export default function StatusPage() {
   const [filtroStatus, setFiltroStatus] = useState<FiltroStatusUI>('todos');
   const [expandidoId, setExpandidoId] = useState<string | null>(null);
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState<number>(Date.now());
-  const [refreshing, setRefreshing] = useState(false);
   const mountedRef = useRef(true);
 
   // Permissão pelas telas de status específicas
@@ -84,10 +82,9 @@ export default function StatusPage() {
 
   const carregar = useCallback(async (isPoll = false) => {
     if (!mountedRef.current) return;
-    if (isPoll) setRefreshing(true);
-    else setIsLoading(true);
+    if (!isPoll) setIsLoading(true);
     try {
-      const dados = await apiService.getSolicitacoes({ empresa: empresaFixa });
+      const dados = await apiService.getSolicitacoes({ empresa: empresaFixa ?? 'Ambas' });
       if (mountedRef.current) {
         setSolicitacoes(dados);
         setUltimaAtualizacao(Date.now());
@@ -95,10 +92,7 @@ export default function StatusPage() {
     } catch (err) {
       console.error(err);
     } finally {
-      if (mountedRef.current) {
-        setIsLoading(false);
-        setRefreshing(false);
-      }
+      if (mountedRef.current) setIsLoading(false);
     }
   }, [empresaFixa]);
 

@@ -5,10 +5,9 @@ import {
   Tag,
   PackageCheck,
   CheckCircle2,
-  Timer,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { type Kpis, formatarTempo } from '../../services/analytics';
+import type { Kpis } from '../../services/analytics';
 
 interface SummaryCardsProps {
   kpis: Kpis;

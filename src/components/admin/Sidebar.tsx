@@ -4,7 +4,6 @@ import { PackageOpen, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { navItemsDoUsuario } from '../../lib/perfil';
 import PerfilButton from '../auth/PerfilButton';
-import { isAdmin } from '../../types';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -58,7 +57,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               key={to}
               to={to}
               onClick={onClose}
-              className={({ isActive }) => {
+              className={() => {
                 // Para rotas com query params comparamos o `to` completo
                 const isItemAtivo = to === window.location.pathname + window.location.search;
 

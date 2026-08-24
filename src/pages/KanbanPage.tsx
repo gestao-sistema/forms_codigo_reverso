@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import apiService from '../services/apiService';
 import type { Solicitacao, StatusSolicitacao } from '../types';
-import { STATUS_SOLICITACAO, STATUS_LABEL, proximoStatus, statusAnterior, movimentoValido, isAdmin } from '../types';
+import { STATUS_SOLICITACAO, STATUS_LABEL, statusAnterior, movimentoValido, isAdmin } from '../types';
 import { useSearchParams } from 'react-router-dom';
 import {
   Clock,
@@ -188,7 +188,7 @@ export default function KanbanPage() {
     if (!mountedRef.current) return;
     if (!isPoll) setIsLoading(true);
     try {
-      const dados = await apiService.getSolicitacoes({ empresa: empresaFixa, limiteConcluidos: 50 });
+      const dados = await apiService.getSolicitacoes({ empresa: empresaFixa ?? 'Ambas', limiteConcluidos: 50 });
       if (mountedRef.current) setSolicitacoes(dados);
     } catch (err) {
       console.error(err);
@@ -215,7 +215,7 @@ export default function KanbanPage() {
     const draggedCard = active.data.current?.item as Solicitacao;
     if (!draggedCard) return;
 
-    const sourceStatus = draggedCard.status || (draggedCard.resolvido ? 'concluido' : 'pendente');
+    const sourceStatus = draggedCard.status || 'pendente';
     const destStatus = over.id as StatusSolicitacao;
 
     if (sourceStatus === destStatus) return; // não mudou

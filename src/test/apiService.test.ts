@@ -9,7 +9,7 @@ vi.mock('../lib/supabase', () => ({
 
 import { supabase } from '../lib/supabase';
 import apiService from '../services/apiService';
-import type { Solicitacao } from '../types';
+import type { Solicitacao, Tela } from '../types';
 
 const solicitacaoMock: Solicitacao = {
   id: 'uuid-1',
@@ -181,7 +181,7 @@ describe('apiService.updateSolicitacao', () => {
       return callCount === 1 ? mockUpdate : mockInsert;
     });
 
-    const user = { id: 'user-1', nome: 'João Silva', usuario: 'joao', telas: ['lista-geral'] };
+        const user = { id: 'user-1', nome: 'João Silva', usuario: 'joao', telas: ['lista-geral'] as Tela[] };
     const res = await apiService.updateSolicitacao(
       'uuid-1',
       { status: 'etiqueta_gerada' },
@@ -210,11 +210,11 @@ describe('apiService.updateSolicitacao', () => {
       return callCount === 1 ? mockUpdate : mockInsert;
     });
 
-    const user = { id: 'user-1', nome: 'Maria Santos', usuario: 'maria', telas: ['status-geral'] };
+    const user2 = { id: 'user-1', nome: 'Maria Santos', usuario: 'maria', telas: ['status-geral'] as Tela[] };
     await apiService.updateSolicitacao(
       'uuid-1',
       { anotacoes: 'Nova anotação' },
-      user
+      user2
     );
 
     expect(mockInsert.insert).toHaveBeenCalled();
