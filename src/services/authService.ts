@@ -77,7 +77,8 @@ function toUsuario(u: any): Usuario {
 
 const authService: IAuthService = {
   async login(usuario, senha) {
-    const email = `${usuario.trim().toLowerCase()}@cr.internal`;
+    const isEmail = usuario.includes('@');
+    const email = isEmail ? usuario.trim().toLowerCase() : `${usuario.trim().toLowerCase()}@cr.internal`;
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email,

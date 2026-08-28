@@ -88,7 +88,8 @@ serve(async (req: Request) => {
     const { action, payload } = await req.json();
 
     if (action === 'create') {
-      const email = `${payload.usuario}@cr.internal`.toLowerCase();
+      const isEmail = payload.usuario.includes('@');
+      const email = isEmail ? payload.usuario.toLowerCase() : `${payload.usuario}@cr.internal`.toLowerCase();
       const { data, error } = await supabaseAdmin.auth.admin.createUser({
         email,
         password: payload.senha,
@@ -120,7 +121,8 @@ serve(async (req: Request) => {
       if (telas) updateData.user_metadata.telas = normalizarTelas(telas);
       if (usuario) {
         updateData.user_metadata.usuario = usuario.toLowerCase();
-        updateData.email = `${usuario.toLowerCase()}@cr.internal`;
+        const isEmail = usuario.includes('@');
+        updateData.email = isEmail ? usuario.toLowerCase() : `${usuario.toLowerCase()}@cr.internal`;
       }
       if (senha) updateData.password = senha;
 

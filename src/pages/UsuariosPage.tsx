@@ -12,10 +12,11 @@ type FormState = {
   nome: string;
   usuario: string;
   senha: string;
+  confirmarSenha: string;
   telas: Tela[];
 };
 
-const VAZIO: FormState = { nome: '', usuario: '', senha: '', telas: [] };
+const VAZIO: FormState = { nome: '', usuario: '', senha: '', confirmarSenha: '', telas: [] };
 
 export default function UsuariosPage() {
   const { user } = useAuth();
@@ -78,6 +79,20 @@ export default function UsuariosPage() {
 
     if (!form.telas || form.telas.length === 0) {
       toast.error('Selecione ao menos uma tela de acesso.');
+      return;
+    }
+
+    // Verificação dupla para senhas
+    if (form.senha && form.senha !== form.confirmarSenha) {
+      toast.error('As senhas não conferem.');
+      return;
+    }
+    if (!modoEdicao && !form.senha) {
+      toast.error('Informe a senha.');
+      return;
+    }
+    if (form.senha && form.senha.length < 6) {
+      toast.error('A senha deve ter pelo menos 6 caracteres.');
       return;
     }
 
@@ -276,6 +291,22 @@ export default function UsuariosPage() {
                 </label>
                 <input id="u-senha" type="password" value={form.senha} onChange={(e) => setForm({ ...form, senha: e.target.value })} className={inputCls} required={!modoEdicao} minLength={modoEdicao ? undefined : 6} />
               </div>
+              {form.senha && (
+                <div className="flex flex-col">
+                  <label htmlFor="u-confirmar-senha" className="text-xs font-medium text-slate-500 mb-1">
+                    Confirmar senha
+                  </label>
+                  <input
+                    id="u-confirmar-senha"
+                    type="password"
+                    value={form.confirmarSenha}
+                    onChange={(e) => setForm({ ...form, confirmarSenha: e.target.value })}
+                    className={inputCls}
+                    required
+                    minLength={6}
+                  />
+                </div>
+              )}
 
               {/* Checklist de telas */}
               <div className="flex flex-col">
