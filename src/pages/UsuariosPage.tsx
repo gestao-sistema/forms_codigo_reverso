@@ -53,7 +53,7 @@ export default function UsuariosPage() {
   };
 
   const abrirEditar = (u: Usuario) => {
-    setForm({ id: u.id, nome: u.nome, usuario: u.usuario, senha: '', telas: u.telas ?? [] });
+    setForm({ id: u.id, nome: u.nome, usuario: u.usuario, senha: '', confirmarSenha: '', telas: u.telas ?? [] });
     setModoEdicao(true);
     setAbrirForm(true);
   };

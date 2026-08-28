@@ -1,3 +1,4 @@
+# check=skip=SecretsUsedInArgOrEnv — anon key é pública (client-side, embutida no bundle)
 # Dockerfile para build e serve (Nginx) do Frontend React + Vite
 
 # 1. Fase de Build
