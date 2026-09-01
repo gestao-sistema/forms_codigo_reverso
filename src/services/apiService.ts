@@ -36,6 +36,11 @@ export interface IApiService {
     codigoRastreio: string,
     user?: UsuarioAutenticado | null
   ): Promise<Solicitacao>;
+  /** Remove o código de rastreio vinculado (libera para reuso em outro card). */
+  removerCodigoRastreio(
+    id: string,
+    user?: UsuarioAutenticado | null
+  ): Promise<Solicitacao>;
   /** Dispara consulta manual de rastreio (chama a Edge Function) e retorna payload bruto. */
   atualizarRastreio(codigoRastreio: string): Promise<any>;
   /** Dispara consulta em lote de todos os rastreios pendentes (Edge Function, body vazio). */

@@ -1,7 +1,7 @@
 // ── Modal de Detalhes da Solicitação ─────────────────────────────────────────
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { X, Timer, Calendar, User, Package, MapPin, Building2, StickyNote, History, Truck, RefreshCw, CheckCircle2, ChevronDown, Trash2 } from 'lucide-react';
+import { X, Timer, Calendar, User, Package, MapPin, Building2, StickyNote, History, Truck, CheckCircle2, ChevronDown, Trash2 } from 'lucide-react';
 import type { Solicitacao, SolicitacaoHistorico, RastreamentoCorreios } from '../../types';
 import { STATUS_LABEL } from '../../types';
 import { formatarTempo } from '../../services/analytics';
@@ -141,7 +141,6 @@ export default function RecordDetailModal({
   const [salvandoAnot, setSalvandoAnot] = useState(false);
   const [codigoRastreio, setCodigoRastreio] = useState('');
   const [salvandoRastreio, setSalvandoRastreio] = useState(false);
-  const [atualizandoRastreio, setAtualizandoRastreio] = useState(false);
   const [historico, setHistorico] = useState<SolicitacaoHistorico[]>([]);
   const [carregandoHist, setCarregandoHist] = useState(false);
   const [rastreio, setRastreio] = useState<RastreamentoCorreios | null>(null);
@@ -280,8 +279,6 @@ export default function RecordDetailModal({
   const atualizarRastreio = async () => {
     if (!solicitacao.codigo_rastreio) return;
     if (solicitacao.status === 'concluido') return; // não gasta cota de API se já entregue
-
-    setAtualizandoRastreio(true);
     try {
       const raw = await apiService.atualizarRastreio(solicitacao.codigo_rastreio);
       setRetornoApi(raw);
@@ -289,8 +286,6 @@ export default function RecordDetailModal({
       setRastreio(r);
     } catch (e) {
       setRetornoApi({ erro: (e as Error).message });
-    } finally {
-      setAtualizandoRastreio(false);
     }
   };
 
@@ -320,9 +315,7 @@ export default function RecordDetailModal({
     </div>
   );
 
-  const eventos = rastreio?.eventos ?? [];
   const temCodigo = !!solicitacao.codigo_rastreio;
-  const ultimoEvento = eventos[0];
 
   return (
     <div

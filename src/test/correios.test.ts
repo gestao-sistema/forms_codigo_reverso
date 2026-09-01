@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { mapEventoParaStatus, extrairEventos, type EventoRastro } from '../../supabase/functions/correios-rastreio/logic.ts';
+import { mapEventoParaStatus, extrairEventos } from '../../supabase/functions/correios-rastreio/logic.ts';
 
 describe('Correios Rastreio - Lógica de Eventos', () => {
   it('mapEventoParaStatus mapeia eventos conhecidos para status Kanban', () => {

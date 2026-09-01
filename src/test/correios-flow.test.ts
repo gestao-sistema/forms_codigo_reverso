@@ -10,7 +10,7 @@ vi.mock('../lib/supabase', () => ({
 
 import { supabase } from '../lib/supabase';
 import apiService from '../services/apiService';
-import type { Solicitacao, RastreamentoCorreios } from '../types';
+import type { RastreamentoCorreios } from '../types';
 
 const rastreamentoMock: RastreamentoCorreios = {
   codigo_rastreio: 'DG049186226BR',

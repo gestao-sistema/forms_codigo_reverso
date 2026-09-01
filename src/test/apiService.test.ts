@@ -210,7 +210,7 @@ describe('apiService.updateSolicitacao', () => {
       return callCount === 1 ? mockUpdate : mockInsert;
     });
 
-    const user2 = { id: 'user-1', nome: 'Maria Santos', usuario: 'maria', telas: ['status-geral'] as Tela[] };
+    const user2 = { id: 'user-1', nome: 'Maria Santos', usuario: 'maria', telas: ['kanban'] as Tela[] };
     await apiService.updateSolicitacao(
       'uuid-1',
       { anotacoes: 'Nova anotação' },
