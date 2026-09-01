@@ -91,26 +91,26 @@ Componentes **nunca** acessam banco diretamente.
 ### Tabela `solicitacoes_reverso`
 
 
-| Coluna                         | Tipo          | Descrição                                               |
-| ------------------------------ | ------------- | ------------------------------------------------------- |
-| `id`                           | `uuid`        | PK, `gen_random_uuid()`                                 |
-| `created_at`                   | `timestamptz` | Timestamp de inserção                                   |
-| `empresa`                      | `text`        | `'Alinare'` \| `'Novitah'`                              |
-| `data_solicitacao`             | `date`        | Data da solicitação (YYYY-MM-DD)                        |
-| `solicitante`                  | `text`        | Nome do solicitante interno                             |
-| `setor`                        | `text`        | Setor (ex: 'Comercial Alinare')                         |
-| `codigo_cliente`               | `integer`     | Código numérico da cliente                              |
-| `nome_cliente`                 | `text`        | Nome completo da cliente                                |
-| `endereco_postagem`            | `text`        | Endereço para devolução                                 |
-| `motivo`                       | `text`        | Motivo (enum: Peça com defeito, Mercadoria errada, ...) |
-| `justificativa_outros`         | `text`        | Obrigatório quando motivo = 'Outros'                    |
-| `autorizacao`                  | `text`        | Nome do autorizador                                     |
-| `status`                       | `text`        | `'pendente' \| 'etiqueta_gerada' \| 'postado' \| 'concluido'` |
-| `etiqueta_gerada_em`           | `timestamptz` | Quando a etiqueta foi gerada (Expedição)                |
-| `postado_em`                   | `timestamptz` | Quando a cliente postou a mercadoria (Comercial)        |
-| `concluido_em`                 | `timestamptz` | Quando a solicitação foi finalizada (Expedição)         |
-| `anotacoes`                    | `text`        | Campo livre para anotações internas                     |
-| `tempo_preenchimento_segundos` | `integer`     | Tempo de preenchimento do formulário                    |
+| Coluna                         | Tipo          | Descrição                                                  |
+| ------------------------------ | ------------- | ---------------------------------------------------------- |
+| `id`                           | `uuid`        | PK, `gen_random_uuid()`                                    |
+| `created_at`                   | `timestamptz` | Timestamp de inserção                                      |
+| `empresa`                      | `text`        | `'Alinare'` | `'Novitah'`                                  |
+| `data_solicitacao`             | `date`        | Data da solicitação (YYYY-MM-DD)                           |
+| `solicitante`                  | `text`        | Nome do solicitante interno                                |
+| `setor`                        | `text`        | Setor (ex: 'Comercial Alinare')                            |
+| `codigo_cliente`               | `integer`     | Código numérico da cliente                                 |
+| `nome_cliente`                 | `text`        | Nome completo da cliente                                   |
+| `endereco_postagem`            | `text`        | Endereço para devolução                                    |
+| `motivo`                       | `text`        | Motivo (enum: Peça com defeito, Mercadoria errada, ...)    |
+| `justificativa_outros`         | `text`        | Obrigatório quando motivo = 'Outros'                       |
+| `autorizacao`                  | `text`        | Nome do autorizador                                        |
+| `status`                       | `text`        | `'pendente' | 'etiqueta_gerada' | 'postado' | 'concluido'` |
+| `etiqueta_gerada_em`           | `timestamptz` | Quando a etiqueta foi gerada (Expedição)                   |
+| `postado_em`                   | `timestamptz` | Quando a cliente postou a mercadoria (Comercial)           |
+| `concluido_em`                 | `timestamptz` | Quando a solicitação foi finalizada (Expedição)            |
+| `anotacoes`                    | `text`        | Campo livre para anotações internas                        |
+| `tempo_preenchimento_segundos` | `integer`     | Tempo de preenchimento do formulário                       |
 
 
 **Índices**:
@@ -125,10 +125,10 @@ CREATE INDEX idx_solicitacoes_status ON solicitacoes_reverso (status);
 Usuários existem em `auth.users` (Supabase Auth). Metadata no JWT:
 
 
-| Campo metadata | Tipo   | Descrição                                                 |
-| -------------- | ------ | --------------------------------------------------------- |
-| `nome`         | `text` | Nome completo                                             |
-| `usuario`      | `text` | Login único (username)                                    |
+| Campo metadata | Tipo     | Descrição                                                           |
+| -------------- | -------- | ------------------------------------------------------------------- |
+| `nome`         | `text`   | Nome completo                                                       |
+| `usuario`      | `text`   | Login único (username)                                              |
 | `telas`        | `text[]` | Array de telas permitidas (ex: `['lista-geral', 'status-alinare']`) |
 
 
@@ -148,21 +148,21 @@ CRUD admin via Edge Function `admin-usuarios` (service_role, só ADMIN chama):
 Substituíram perfis legados. Cada usuário recebe um array `telas` no JWT:
 
 
-| Tela               | Descrição                              | Empresa (escopo) |
-| ------------------ | -------------------------------------- | ---------------- |
-| `dashboard-geral`  | Dashboard (todas empresas)             | Ambas            |
-| `dashboard-alinare`| Dashboard (Alinare)                    | Alinare          |
-| `dashboard-novitah`| Dashboard (Novitah)                    | Novitah          |
-| `formulario-alinare`| Formulário Alinare                    | Alinare          |
-| `formulario-novitah`| Formulário Novitah                    | Novitah          |
-| `lista-geral`      | Lista de solicitações (Expedição)      | Ambas            |
-| `lista-alinare`    | Lista (Alinare)                        | Alinare          |
-| `lista-novitah`    | Lista (Novitah)                        | Novitah          |
-| `status-geral`     | Status (Comercial vê tudo)             | Ambas            |
-| `status-alinare`   | Status (Alinare)                       | Alinare          |
-| `status-novitah`   | Status (Novitah)                       | Novitah          |
-| `kanban`           | Kanban (visão geral do fluxo)          | Ambas            |
-| `usuarios`         | Administração de usuários (Admin)      | Ambas            |
+| Tela                 | Descrição                         | Empresa (escopo) |
+| -------------------- | --------------------------------- | ---------------- |
+| `dashboard-geral`    | Dashboard (todas empresas)        | Ambas            |
+| `dashboard-alinare`  | Dashboard (Alinare)               | Alinare          |
+| `dashboard-novitah`  | Dashboard (Novitah)               | Novitah          |
+| `formulario-alinare` | Formulário Alinare                | Alinare          |
+| `formulario-novitah` | Formulário Novitah                | Novitah          |
+| `lista-geral`        | Lista de solicitações (Expedição) | Ambas            |
+| `lista-alinare`      | Lista (Alinare)                   | Alinare          |
+| `lista-novitah`      | Lista (Novitah)                   | Novitah          |
+| `status-geral`       | Status (Comercial vê tudo)        | Ambas            |
+| `status-alinare`     | Status (Alinare)                  | Alinare          |
+| `status-novitah`     | Status (Novitah)                  | Novitah          |
+| `kanban`             | Kanban (visão geral do fluxo)     | Ambas            |
+| `usuarios`           | Administração de usuários (Admin) | Ambas            |
 
 
 Definidos em `src/types/index.ts` → `Tela`, `TELAS`, `TELA_LABEL`.
@@ -175,12 +175,14 @@ Definidos em `src/types/index.ts` → `Tela`, `TELAS`, `TELA_LABEL`.
 pendente → etiqueta_gerada → postado → concluido
 ```
 
-| Status          | Quem move        | Onde           | Timestamp            |
-| --------------- | ---------------- | --------------- | -------------------- |
-| `pendente`      | — (criação)      | Formulário      | —                    |
-| `etiqueta_gerada`| **Expedição** (`lista-*`) | Lista / Kanban | `etiqueta_gerada_em` |
-| `postado`       | **Comercial** (`status-*` sem `lista-*`) | Status / Kanban | `postado_em`        |
-| `concluido`     | **Expedição** (`lista-*`) | Lista / Kanban | `concluido_em`      |
+
+| Status            | Quem move                                | Onde            | Timestamp            |
+| ----------------- | ---------------------------------------- | --------------- | -------------------- |
+| `pendente`        | — (criação)                              | Formulário      | —                    |
+| `etiqueta_gerada` | **Expedição** (`lista-*`)                | Lista / Kanban  | `etiqueta_gerada_em` |
+| `postado`         | **Comercial** (`status-*` sem `lista-*`) | Status / Kanban | `postado_em`         |
+| `concluido`       | **Expedição** (`lista-*`)                | Lista / Kanban  | `concluido_em`       |
+
 
 - **Admin** (`usuarios`) pode mover em qualquer direção
 - **Expedição** (tela `lista-*`) → `pendente→etiqueta_gerada`, `postado→concluido`
@@ -308,18 +310,18 @@ Empresa | Data Solicitação | Solicitante | Setor | Código Cliente | Nome Clie
 
 ---
 
-## Dashboard, Kanban & Gráficos (`src/components/admin/`)
+## Dashboard, Kanban &amp; Gráficos (`src/components/admin/`)
 
 
-| Componente           | Biblioteca             | Dados                    |
-| -------------------- | ---------------------- | ------------------------ |
-| `ChartEmpresa`       | Recharts (PieChart)    | Distribuição por empresa |
-| `ChartMotivo`        | Recharts (BarChart)    | Top motivos              |
-| `ChartTimeline`      | Recharts (LineChart)   | Solicitações por dia     |
-| `ChartAutorizador`   | Recharts (BarChart)    | Por autorizador          |
-| `ChartMotivoEmpresa` | Recharts (Grouped Bar) | Motivo × Empresa         |
+| Componente           | Biblioteca             | Dados                                                            |
+| -------------------- | ---------------------- | ---------------------------------------------------------------- |
+| `ChartEmpresa`       | Recharts (PieChart)    | Distribuição por empresa                                         |
+| `ChartMotivo`        | Recharts (BarChart)    | Top motivos                                                      |
+| `ChartTimeline`      | Recharts (LineChart)   | Solicitações por dia                                             |
+| `ChartAutorizador`   | Recharts (BarChart)    | Por autorizador                                                  |
+| `ChartMotivoEmpresa` | Recharts (Grouped Bar) | Motivo × Empresa                                                 |
 | `SummaryCards`       | —                      | 5 KPIs (Total, Pendentes, Etiqueta Gerada, Postados, Concluídos) |
-| `KanbanPage`         | — (botões, sem DnD)    | 4 colunas por status     |
+| `KanbanPage`         | — (botões, sem DnD)    | 4 colunas por status                                             |
 
 
 Dados via `useSolicitacoes.ts` (hook com cache, polling 15s e invalidação).
@@ -347,6 +349,145 @@ RUN npm run build
 EXPOSE 4173
 CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0", "--port", "4173"]
 ```
+
+---
+
+## Rastreamento Correios (API Oficial)
+
+### Visão Geral
+
+O sistema consulta a API oficial dos Correios (SRO — Rastreamento de Objetos) para atualizar automaticamente o status das solicitações que possuem código de rastreio.
+
+### Arquitetura do Rastreamento
+
+```
+Frontend (KanbanPage / RecordDetailModal)
+       │
+       ▼
+apiService.atualizarRastreioLote() / atualizarRastreio(codigo)
+       │
+       ▼
+Supabase Edge Function: `correios-rastreio` (Deno)
+       │
+       ├─► Busca token OAuth 2.0 (Basic Auth: usuario:senha)
+       │    Endpoint: POST https://api.correios.com.br/token/v1/autentica/cartaopostagem
+       │
+       └─► Consulta rastreio por código
+            Endpoint: GET https://api.correios.com.br/srorastro/v1/objetos/{codigo}?resultado=T
+```
+
+### Empresas / Contratos Configurados (4 contas)
+
+O sistema suporta **múltiplos contratos/CNPJs** simultâneos. Cada "empresa" no `.env` / Supabase Secrets tem suas próprias credenciais (usuario, senha, cartão de postagem). Ao consultar um código, a Edge Function itera nas 4 contas até achar a dona do pacote.
+
+
+| Prefixo ENV | Empresa (CNPJ) | Uso                               |
+| ----------- | -------------- | --------------------------------- |
+| `ALINARE`   | 19679195000176 | Contrato principal (9912398217)   |
+| `AZIME`     | 30013070000145 | Contrato secundário (9912666541)  |
+| `ARTIKLER`  | 15277597000193 | Contrato terciário (9912529770)   |
+| `NOVITAH`   | 29971267000108 | Contrato quaternário (9912459852) |
+
+
+**Lógica de busca**:
+
+1. Itera `['ALINARE','AZIME','ARTIKLER','NOVITAH']` em ordem
+2. Para cada conta: obtém token (cache 24h com margem 60s)
+3. Consulta `srorastro/v1/objetos/{codigo}`
+4. Se resposta traz `objetos[0].mensagem` contendo **SRO-009** → "não pertence a este contrato" → tenta próxima conta
+5. Se achou eventos → **break** (achou o contrato dono)
+6. Atualiza tabela `solicitacoes_reverso` (status, timestamps, cidade) + tabela `rastreamento_correios` (eventos completos)
+7. Retorna JSON bruto da API pro frontend exibir
+
+**Resultado**: o mesmo código de rastreio funciona independentemente de qual CNPJ postou, sem configuração manual.
+
+### Refresh de Tokens (Simplificado)
+
+- **Cache em memória** na Edge Function (`tokensCache[prefixo]`) com TTL de 24h - 60s
+- Na primeira chamada ou se expirado: faz `POST /token/v1/autentica/cartaopostagem` com Basic Auth (`usuario:senha` em Base64)
+- Retorno contém `token` (JWT RS512) + `expiraEm` (ISO 8601)
+- Cache evita re-autenticar a cada request; validação de expiração é feita no lado do cliente (edge)
+- Se 401/403: token pode ter expirado antes do cache → invalida cache e tenta novamente (lógica futura)
+
+### Configuração de Segredos (Supabase Secrets)
+
+```bash
+# 4 contas — cada uma com 3 segredos
+CORREIOS_USUARIO_ALINARE    CORREIOS_SENHA_ALINARE    CORREIOS_POSTAGEM_ALINARE
+CORREIOS_USUARIO_AZIME      CORREIOS_SENHA_AZIME      CORREIOS_POSTAGEM_AZIME
+CORREIOS_USUARIO_ARTIKLER   CORREIOS_SENHA_ARTIKLER   CORREIOS_POSTAGEM_ARTIKLER
+CORREIOS_USUARIO_NOVITAH    CORREIOS_SENHA_NOVITAH    CORREIOS_POSTAGEM_NOVITAH
+```
+
+Comando para atualizar:
+
+```bash
+npx supabase secrets set \
+  CORREIOS_USUARIO_ALINARE=... \
+  CORREIOS_SENHA_ALINARE=... \
+  CORREIOS_POSTAGEM_ALINARE=... \
+  # ... demais
+```
+
+### Fluxo de Uso (Frontend → Backend)
+
+
+| Ação do Usuário                          | Chamada API                              | O que acontece no Backend                                                            |
+| ---------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------ |
+| Salva código no card                     | `apiService.salvarCodigoRastreio()`      | UPDATE card + histórico + dispara `atualizarRastreio(codigo)`                        |
+| Clica "Atualizar" / abre "Mais detalhes" | `apiService.atualizarRastreio(codigo)`   | Edge Function itera 4 contas → retorna JSON bruto                                    |
+| Abre página Kanban                       | `carregar()` + `atualizarRastreioLote()` | Lote: pega todos `postado/em_transito/etiqueta_gerada` com código → processa em lote |
+| Polling 15s (Kanban)                     | `carregar(true)`                         | Só re-lê do banco (não bate em Correios)                                             |
+
+
+### Mapeamento de Eventos → Status Kanban
+
+
+| Código Correios | Descrição                    | Status Kanban | Coluna      |
+| --------------- | ---------------------------- | ------------- | ----------- |
+| `PO`            | Objeto postado               | `postado`     | Postado     |
+| `RO` / `OEC`    | Em trânsito / Saiu p/entrega | `em_transito` | Em Trânsito |
+| `BDE`           | Entregue ao destinatário     | `concluido`   | Concluído   |
+| `FC` / outros   | Etiqueta emitida / outros    | — (ignora)    | —           |
+
+
+O campo `ultima_cidade_rastreio` é preenchido com `cidade/UF` da unidade do último evento.
+
+### Remoção de Código (Libera para Reuso)
+
+Botão **🗑️** no modal ao lado de "Salvar Código":
+
+- Pede confirmação (`window.confirm`)
+- Chama `apiService.removerCodigoRastreio(id, user)`
+- Backend: deleta `rastreamento_correios` + seta `codigo_rastreio=null` + `ultima_cidade_rastreio=null` + histórico `"Código de rastreio removido: XXX"`
+- Frontend limpa campo, timeline, retorno API, recarrega histórico
+- Código fica livre para ser colado em outro card
+
+### Boas Práticas para Novos Devs
+
+1. **Nunca** coloque credenciais no código/front — use Supabase Secrets (`Deno.env.get()` na Edge Function)
+2. **Nunca** logue tokens — logs da Edge Function mostram só `pertence=true/false` e contagem de eventos
+3. **Sempre** use `apiService` — componentes **nunca** acessam Supabase direto
+4. **Token expirou?** A Edge Function trata automaticamente (cache + retry na próxima chamada)
+5. **Código dá SRO-009?** Significa que pertence a outro contrato — a Edge Function já tenta as outras 3 contas automaticamente
+6. **409 Conflict ao salvar?** Código já existe em outro card → use botão 🗑️ no card antigo ou peça ao time pra apagar
+
+### Performance e Proteção de Cota (Rate Limits)
+
+De acordo com o manual da API dos Correios, não há menções claras sobre limites de requisição. Entretanto, as seguintes estratégias estão implementadas para proteger a saúde da integração:
+
+1. **Memoização do Token**: O endpoint `/token/v1/autentica/cartaopostagem` não é chamado a cada requisição. O JWT gerado dura 24h. A Edge Function mantém um cache em memória (`tokensCache`) e reutiliza o mesmo token para o prefixo da conta durante todo o período, acionando o *refresh* automático apenas quando `agora < expiraEmMs - 60s`.
+2. **Short-Circuit em Status Concluído**: Para evitar consumo de cota (e lentidão na UI) processando pacotes finalizados, a Edge Function e o Frontend bloqueiam imediatamente a requisição se `solicitacao.status === 'concluido'`. Uma vez entregue (evento BDE), a API dos Correios não é mais sobrecarregada com este pacote.
+3. **Lote Sincronizado Controlado**: O job de atualização em lote (via cronjob ou refresh da tela Kanban) não roda sobre toda a base. Apenas registros com os status intermediários `['etiqueta_gerada', 'postado', 'em_transito']` são selecionados na query, contendo estritamente os pacotes pendentes de resposta logística.
+
+### Testes Automatizados
+
+```bash
+npm run test              # Roda tudo (118 testes)
+npx vitest run src/test/correios.test.ts src/test/correios-flow.test.ts
+```
+
+Cobertura: lógica de eventos (`mapEventoParaStatus`), extração de eventos, fluxo do service (`getRastreio`, `atualizarRastreio`, `salvarCodigoRastreio`, `removerCodigoRastreio`), fluxo de navegação (`perfil.test.ts`), integração completa.
 
 ---
 
@@ -389,15 +530,16 @@ Para recriar tabela do zero (novo ambiente):
 ## Troubleshooting
 
 
-| Problema                                 | Causa                             | Solução                                                            |
-| ---------------------------------------- | --------------------------------- | ------------------------------------------------------------------ |
-| `Supabase não configurado`               | `.env` ausente ou vars erradas    | Verifique `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`           |
-| Login falha "Usuário ou senha inválidos" | Usuário não existe / senha errada | Admin gerencia senhas na aba de Usuários                           |
-| Gráficos vazios                          | RLS bloqueando SELECT             | Policy `SELECT` para `anon` / `authenticated` na tabela            |
-| Build falha no `tsc`                     | Tipos desatualizados              | `npm install` + verifique `src/types/index.ts` sincronizado com DB |
-| Kanban não carrega / tela cortada        | Height mal calculada              | Ajuste `h-[calc(100dvh-...)]` em `KanbanPage.tsx` por breakpoint  |
-| Botão "Marcar postado" não aparece       | Permissão de tela                 | Usuário precisa de `status-*` **sem** `lista-*` (ou `usuarios`)    |
+| Problema                                 | Causa                             | Solução                                                                          |
+| ---------------------------------------- | --------------------------------- | -------------------------------------------------------------------------------- |
+| `Supabase não configurado`               | `.env` ausente ou vars erradas    | Verifique `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`                         |
+| Login falha "Usuário ou senha inválidos" | Usuário não existe / senha errada | Admin gerencia senhas na aba de Usuários                                         |
+| Gráficos vazios                          | RLS bloqueando SELECT             | Policy `SELECT` para `anon` / `authenticated` na tabela                          |
+| Build falha no `tsc`                     | Tipos desatualizados              | `npm install` + verifique `src/types/index.ts` sincronizado com DB               |
+| Kanban não carrega / tela cortada        | Height mal calculada              | Ajuste `h-[calc(100dvh-...)]` em `KanbanPage.tsx` por breakpoint                 |
+| Botão "Marcar postado" não aparece       | Permissão de tela                 | Usuário precisa de `status-*` **sem** `lista-*` (ou `usuarios`)                  |
 | Erro ao salvar anotações                 | Coluna `anotacoes` não existe     | Rode `ALTER TABLE solicitacoes_reverso ADD COLUMN IF NOT EXISTS anotacoes TEXT;` |
+
 
 ---
 

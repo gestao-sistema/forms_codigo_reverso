@@ -146,7 +146,6 @@ export default function UsuariosPage() {
     { titulo: 'Dashboards', telas: ['dashboard-geral', 'dashboard-alinare', 'dashboard-novitah'] },
     { titulo: 'Formulários', telas: ['formulario-alinare', 'formulario-novitah'] },
     { titulo: 'Listas', telas: ['lista-geral', 'lista-alinare', 'lista-novitah'] },
-    { titulo: 'Status', telas: ['status-geral', 'status-alinare', 'status-novitah'] },
     { titulo: 'Kanban', telas: ['kanban', 'kanban-edit'] },
     { titulo: 'Administração', telas: ['usuarios'] },
   ];

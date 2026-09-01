@@ -12,8 +12,8 @@ import type {
   CreateSolicitacaoPayload,
   UpdateSolicitacaoPayload,
   FiltrosSolicitacoes,
+  RastreamentoCorreios,
 } from '../types';
-
 import { STATUS_LABEL, type UsuarioAutenticado } from '../types';
 
 // ── Interface pública do serviço ──────────────────────────────────────────────
@@ -28,6 +28,18 @@ export interface IApiService {
   getSolicitacaoById(id: string): Promise<Solicitacao | null>;
   deleteSolicitacao(id: string): Promise<void>;
   getHistorico(solicitacaoId: string): Promise<SolicitacaoHistorico[]>;
+  /** Retorna o rastreio completo de uma solicitação. */
+  getRastreio(codigoRastreio: string): Promise<RastreamentoCorreios | null>;
+  /** Salva o código de rastreio dos Correios em uma solicitação. */
+  salvarCodigoRastreio(
+    id: string,
+    codigoRastreio: string,
+    user?: UsuarioAutenticado | null
+  ): Promise<Solicitacao>;
+  /** Dispara consulta manual de rastreio (chama a Edge Function) e retorna payload bruto. */
+  atualizarRastreio(codigoRastreio: string): Promise<any>;
+  /** Dispara consulta em lote de todos os rastreios pendentes (Edge Function, body vazio). */
+  atualizarRastreioLote(): Promise<any>;
 }
 
 /** Converte erro Supabase em mensagem legível */
@@ -77,7 +89,7 @@ const apiService: IApiService = {
     if (limite > 0) {
       // Query 1: ativos (sem concluidos)
       const ativosQuery = baseFilters(filtros)
-        .in('status', ['pendente', 'etiqueta_gerada', 'postado'])
+        .in('status', ['pendente', 'etiqueta_gerada', 'postado', 'em_transito'])
         .order('data_solicitacao', { ascending: false })
         .order('created_at', { ascending: false });
       const { data: ativos, error: e1 } = await ativosQuery;
@@ -187,6 +199,20 @@ const apiService: IApiService = {
   },
 
   /**
+   * Retorna os dados completos do rastreio.
+   */
+  async getRastreio(codigoRastreio: string): Promise<RastreamentoCorreios | null> {
+    const { data, error } = await supabase
+      .from('rastreamento_correios')
+      .select('*')
+      .eq('codigo_rastreio', codigoRastreio)
+      .maybeSingle();
+
+    checarErro(error, 'Erro ao buscar rastreio.');
+    return (data as RastreamentoCorreios) ?? null;
+  },
+
+  /**
    * Busca uma solicitação específica pelo ID.
    * Retorna null se não encontrada.
    */
@@ -211,6 +237,99 @@ const apiService: IApiService = {
       .eq('id', id);
 
     checarErro(error, 'Erro ao apagar solicitação.');
+  },
+
+  /**
+   * Salva/atualiza o código de rastreio dos Correios para uma solicitação.
+   */
+  async salvarCodigoRastreio(
+    id: string,
+    codigoRastreio: string,
+    user?: UsuarioAutenticado | null
+  ): Promise<Solicitacao> {
+    const { data: atualizada, error } = await supabase
+      .from('solicitacoes_reverso')
+      .update({ codigo_rastreio: codigoRastreio.toUpperCase().trim() })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error?.code === '23505') {
+      throw new Error('Este código de rastreio já está vinculado a outra solicitação.');
+    }
+    checarErro(error, 'Erro ao salvar código de rastreio.');
+
+    if (user) {
+      await supabase.from('solicitacoes_historico').insert({
+        solicitacao_id: id,
+        user_nome: user.nome,
+        acao: `Código de rastreio informado: ${codigoRastreio.toUpperCase().trim()}`,
+      });
+    }
+
+    return atualizada as Solicitacao;
+  },
+
+  /** Remove código de rastreio vinculado (seta null + limpa rastreamento_correios). */
+  async removerCodigoRastreio(
+    id: string,
+    user?: UsuarioAutenticado | null
+  ): Promise<Solicitacao> {
+    // Busca código atual pra logar no histórico e pra limpar rastreamento_correios
+    const { data: atual } = await supabase
+      .from('solicitacoes_reverso')
+      .select('codigo_rastreio')
+      .eq('id', id)
+      .single();
+
+    const codigo = (atual as any)?.codigo_rastreio;
+
+    // Remove da tabela de rastreamento
+    if (codigo) {
+      await supabase.from('rastreamento_correios').delete().eq('codigo_rastreio', codigo);
+    }
+
+    // Seta null no card e limpa cidade (se tiver)
+    const { data: atualizada, error } = await supabase
+      .from('solicitacoes_reverso')
+      .update({ codigo_rastreio: null, ultima_cidade_rastreio: null })
+      .eq('id', id)
+      .select()
+      .single();
+
+    checarErro(error, 'Erro ao remover código de rastreio.');
+
+    if (user && codigo) {
+      await supabase.from('solicitacoes_historico').insert({
+        solicitacao_id: id,
+        user_nome: user.nome,
+        acao: `Código de rastreio removido: ${codigo}`,
+      });
+    }
+
+    return atualizada as Solicitacao;
+  },
+
+  /**
+   * Dispara consulta manual de rastreio (chama Edge Function correios-rastreio).
+   */
+  async atualizarRastreio(codigoRastreio: string): Promise<any> {
+    const { data, error } = await supabase.functions.invoke('correios-rastreio', {
+      body: { codigo: codigoRastreio },
+    });
+    if (error) throw new Error(error.message || 'Erro ao atualizar rastreio.');
+    return data;
+  },
+
+  /**
+   * Dispara consulta em lote (chama Edge Function correios-rastreio sem código).
+   */
+  async atualizarRastreioLote(): Promise<any> {
+    const { data, error } = await supabase.functions.invoke('correios-rastreio', {
+      body: {},
+    });
+    if (error) throw new Error(error.message || 'Erro ao atualizar rastreios em lote.');
+    return data;
   },
 };
 

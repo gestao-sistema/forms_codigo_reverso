@@ -13,7 +13,6 @@ import NovitahFormPage from './pages/NovitahFormPage';
 import AdminLayout from './components/admin/AdminLayout';
 import DashboardPage from './pages/DashboardPage';
 import ListPage from './pages/ListPage';
-import StatusPage from './pages/StatusPage';
 import UsuariosPage from './pages/UsuariosPage';
 
 import KanbanPage from './pages/KanbanPage';
@@ -73,15 +72,7 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="status"
-              element={
-                <ProtectedRoute telas={['status-geral', 'status-alinare', 'status-novitah']}>
-                  <StatusPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
+                        <Route
               path="kanban"
               element={
                 <ProtectedRoute telas={['kanban']}>

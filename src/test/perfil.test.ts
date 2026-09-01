@@ -22,24 +22,20 @@ describe('homeDoUsuario', () => {
   it('só lista-geral → /admin/lista', () => {
     expect(homeDoUsuario(usuario(['lista-geral']))).toBe('/admin/lista');
   });
-  it('só status-geral → /admin/status', () => {
-    expect(homeDoUsuario(usuario(['status-geral']))).toBe('/admin/status');
-  });
-  it('status-alinare → status com query', () => {
-    expect(homeDoUsuario(usuario(['status-alinare']))).toBe('/admin/status?empresa=Alinare');
+  it('só kanban → /admin/kanban', () => {
+    expect(homeDoUsuario(usuario(['kanban']))).toBe('/admin/kanban');
   });
 });
 
 describe('navItemsDoUsuario', () => {
   it('admin vê apenas itens gerais (sem variações por empresa)', () => {
     const items = navItemsDoUsuario(usuario(['usuarios']));
-    expect(items.length).toBe(7);
+    expect(items.length).toBe(6);
     expect(items.map(i => i.to)).toEqual([
       '/admin/dashboard',
       '/admin/lista',
       '/admin/alinare',
       '/admin/novitah',
-      '/admin/status',
       '/admin/kanban',
       '/admin/usuarios',
     ]);
@@ -47,11 +43,11 @@ describe('navItemsDoUsuario', () => {
   });
 
   it('user com telas parciais vê apenas as autorizadas', () => {
-    const items = navItemsDoUsuario(usuario(['dashboard-alinare', 'formulario-alinare', 'status-alinare']));
+    const items = navItemsDoUsuario(usuario(['dashboard-alinare', 'formulario-alinare', 'kanban']));
     expect(items.map(i => i.to)).toEqual([
       '/admin/dashboard?empresa=Alinare',
       '/admin/alinare',
-      '/admin/status?empresa=Alinare',
+      '/admin/kanban',
     ]);
   });
 

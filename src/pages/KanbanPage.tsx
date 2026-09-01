@@ -11,6 +11,7 @@ import {
   PackageCheck,
   Filter,
   StickyNote,
+  Truck,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { COR_EMPRESA } from '../services/analytics';
@@ -36,6 +37,7 @@ const STATUS_VISUAL: Record<
   pendente: { bg: 'bg-amber-50/50', headerBg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-200', icon: Clock },
   etiqueta_gerada: { bg: 'bg-blue-50/50', headerBg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-200', icon: Tag },
   postado: { bg: 'bg-violet-50/50', headerBg: 'bg-violet-100', text: 'text-violet-700', border: 'border-violet-200', icon: PackageCheck },
+  em_transito: { bg: 'bg-orange-50/50', headerBg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-200', icon: Truck },
   concluido: { bg: 'bg-emerald-50/50', headerBg: 'bg-emerald-100', text: 'text-emerald-700', border: 'border-emerald-200', icon: CheckCircle2 },
 };
 
@@ -73,6 +75,12 @@ function KanbanCard({ item, onClick }: { item: Solicitacao; onClick?: () => void
           </span>
         )}
       </div>
+      {item.status === 'em_transito' && item.ultima_cidade_rastreio && (
+        <div className="flex items-center gap-1 text-xs text-orange-600">
+          <Truck className="w-3 h-3" />
+          <span className="truncate">{item.ultima_cidade_rastreio}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -170,7 +178,6 @@ export default function KanbanPage() {
 
   const temGeral =
     user?.telas.includes('lista-geral') ||
-    user?.telas.includes('status-geral') ||
     user?.telas.includes('dashboard-geral') ||
     user?.telas.includes('usuarios');
   const temAlinare = user?.telas.some((t) => t.includes('alinare'));
@@ -197,9 +204,19 @@ export default function KanbanPage() {
     }
   }, [empresaFixa]);
 
+  // Efeito principal: carrega dados locais, sincroniza com Correios e recarrega
   useEffect(() => {
     mountedRef.current = true;
+
+    // 1. Carrega dados rápidos do BD local
     carregar(false);
+
+    // 2. Dispara sync em lote com os Correios e recarrega Kanban ao terminar
+    apiService.atualizarRastreioLote()
+      .then(() => { if (mountedRef.current) carregar(true); })
+      .catch(console.error);
+
+    // 3. Polling a cada 15s para manter Kanban vivo
     const id = setInterval(() => carregar(true), POLLING_MS);
     return () => { mountedRef.current = false; clearInterval(id); };
   }, [carregar]);
@@ -241,13 +258,17 @@ export default function KanbanPage() {
       if (destStatus === statusAnterior('postado')) {
         payload.postado_em = null; // voltou de postado para etiqueta_gerada
       }
+      if (destStatus === statusAnterior('em_transito')) {
+        payload.em_transito_em = null; // voltou de em_transito para postado
+      }
       if (destStatus === statusAnterior('concluido')) {
-        payload.concluido_em = null; // voltou de concluido para postado
+        payload.concluido_em = null; // voltou de concluido para em_transito
       }
 
       // Seta timestamp ao avançar
       if (destStatus === 'etiqueta_gerada') payload.etiqueta_gerada_em = new Date().toISOString();
       if (destStatus === 'postado') payload.postado_em = new Date().toISOString();
+      if (destStatus === 'em_transito') payload.em_transito_em = new Date().toISOString();
       if (destStatus === 'concluido') payload.concluido_em = new Date().toISOString();
 
       await apiService.updateSolicitacao(draggedCard.id, payload, user);
@@ -264,6 +285,7 @@ export default function KanbanPage() {
       pendente: [],
       etiqueta_gerada: [],
       postado: [],
+      em_transito: [],
       concluido: [],
     };
     solicitacoes.forEach((s) => {

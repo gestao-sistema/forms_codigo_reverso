@@ -1,16 +1,17 @@
 // ── Lista em Tabela das Solicitações ─────────────────────────────────────────
-import { Inbox, Trash2, Clock, Tag, PackageCheck, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Inbox, Trash2, Clock, Tag, PackageCheck, CheckCircle2, ArrowRight, Truck } from 'lucide-react';
 import type { Solicitacao, StatusSolicitacao } from '../../types';
 import { COR_EMPRESA } from '../../services/analytics';
 
 /** Visual + próxima ação disponível na Lista (Expedição) para cada status. */
 const STATUS_LISTA: Record<
   StatusSolicitacao,
-  { bg: string; text: string; icon: typeof Clock; label: string; acao?: string }
+  { bg: string; text: string; icon: React.ElementType; label: string; acao?: string }
 > = {
   pendente: { bg: 'bg-amber-50', text: 'text-amber-700', icon: Clock, label: 'Pendente', acao: 'Etiqueta Gerada' },
   etiqueta_gerada: { bg: 'bg-blue-50', text: 'text-blue-700', icon: Tag, label: 'Etiqueta Gerada' },
   postado: { bg: 'bg-violet-50', text: 'text-violet-700', icon: PackageCheck, label: 'Postado', acao: 'Concluir' },
+  em_transito: { bg: 'bg-orange-50', text: 'text-orange-700', icon: Truck, label: 'Em Trânsito', acao: 'Concluir' },
   concluido: { bg: 'bg-emerald-50', text: 'text-emerald-700', icon: CheckCircle2, label: 'Concluído' },
 };
 

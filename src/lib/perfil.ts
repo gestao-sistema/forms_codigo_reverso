@@ -1,5 +1,5 @@
 // ── Helpers de perfil: rota inicial e itens de navegação ─────────────────────
-import { BarChart3, ClipboardList, FileText, ListChecks, Users, SquareKanban } from 'lucide-react';
+import { BarChart3, ClipboardList, FileText, Users, SquareKanban } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { Tela, UsuarioAutenticado } from '../types';
 import { isAdmin } from '../types';
@@ -8,7 +8,7 @@ import { isAdmin } from '../types';
 export function homeDoUsuario(user: UsuarioAutenticado): string {
   if (isAdmin(user)) return '/admin/dashboard';
 
-  // Prioriza dashboards, depois listas, depois formulários, depois status
+  // Prioriza dashboards, depois listas, depois formulários, depois kanban
   if (user.telas.includes('dashboard-geral')) return '/admin/dashboard';
   if (user.telas.includes('dashboard-alinare')) return '/admin/dashboard?empresa=Alinare';
   if (user.telas.includes('dashboard-novitah')) return '/admin/dashboard?empresa=Novitah';
@@ -17,9 +17,6 @@ export function homeDoUsuario(user: UsuarioAutenticado): string {
   if (user.telas.includes('lista-novitah')) return '/admin/lista?empresa=Novitah';
   if (user.telas.includes('formulario-alinare')) return '/admin/alinare';
   if (user.telas.includes('formulario-novitah')) return '/admin/novitah';
-  if (user.telas.includes('status-geral')) return '/admin/status';
-  if (user.telas.includes('status-alinare')) return '/admin/status?empresa=Alinare';
-  if (user.telas.includes('status-novitah')) return '/admin/status?empresa=Novitah';
 
   // Kanban como última opção antes do fallback
   if (user.telas.includes('kanban') || user.telas.includes('kanban-edit')) {
@@ -45,9 +42,6 @@ const NAV_MAP: Record<Tela, NavItem> = {
   'lista-geral': { to: '/admin/lista', label: 'Lista', icon: ClipboardList },
   'lista-alinare': { to: '/admin/lista?empresa=Alinare', label: 'Lista', icon: ClipboardList },
   'lista-novitah': { to: '/admin/lista?empresa=Novitah', label: 'Lista', icon: ClipboardList },
-  'status-geral': { to: '/admin/status', label: 'Status', icon: ListChecks },
-  'status-alinare': { to: '/admin/status?empresa=Alinare', label: 'Status', icon: ListChecks },
-  'status-novitah': { to: '/admin/status?empresa=Novitah', label: 'Status', icon: ListChecks },
   kanban: { to: '/admin/kanban', label: 'Kanban', icon: SquareKanban },
   // Permissão de edição, não uma tela navegável — mesma rota do Kanban.
   'kanban-edit': { to: '/admin/kanban', label: 'Kanban', icon: SquareKanban },
@@ -64,9 +58,6 @@ const ORDEM_NAV: Tela[] = [
   'lista-novitah',
   'formulario-alinare',
   'formulario-novitah',
-  'status-geral',
-  'status-alinare',
-  'status-novitah',
   'kanban',
   'usuarios',
 ];
@@ -77,7 +68,6 @@ const ORDEM_NAV_ADMIN: Tela[] = [
   'lista-geral',
   'formulario-alinare',
   'formulario-novitah',
-  'status-geral',
   'kanban',
   'usuarios',
 ];
@@ -112,12 +102,6 @@ export function telaDaRota(pathname: string, search: string): Tela | null {
       return 'formulario-alinare';
     case '/admin/novitah':
       return 'formulario-novitah';
-    case '/admin/status':
-      return empresa === 'Alinare'
-        ? 'status-alinare'
-        : empresa === 'Novitah'
-        ? 'status-novitah'
-        : 'status-geral';
     case '/admin/kanban':
       return 'kanban';
     case '/admin/usuarios':

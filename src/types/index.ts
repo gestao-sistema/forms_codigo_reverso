@@ -21,6 +21,7 @@ export const STATUS_SOLICITACAO = [
   'pendente',
   'etiqueta_gerada',
   'postado',
+  'em_transito',
   'concluido',
 ] as const;
 
@@ -31,6 +32,7 @@ export const STATUS_LABEL: Record<StatusSolicitacao, string> = {
   pendente: 'Pendente',
   etiqueta_gerada: 'Etiqueta Gerada',
   postado: 'Postado',
+  em_transito: 'Em Trânsito',
   concluido: 'Concluído',
 };
 
@@ -42,6 +44,8 @@ export function proximoStatus(s: StatusSolicitacao): StatusSolicitacao | null {
     case 'etiqueta_gerada':
       return 'postado';
     case 'postado':
+      return 'em_transito';
+    case 'em_transito':
       return 'concluido';
     default:
       return null;
@@ -55,8 +59,10 @@ export function statusAnterior(s: StatusSolicitacao): StatusSolicitacao | null {
       return 'pendente';
     case 'postado':
       return 'etiqueta_gerada';
-    case 'concluido':
+    case 'em_transito':
       return 'postado';
+    case 'concluido':
+      return 'em_transito';
     default:
       return null;
   }
@@ -121,8 +127,14 @@ export interface Solicitacao {
   etiqueta_gerada_em?: string | null;
   /** Quando a cliente postou a mercadoria (comercial) */
   postado_em?: string | null;
+  /** Quando entrou em trânsito (rastreio Correios) */
+  em_transito_em?: string | null;
   /** Quando a solicitação foi concluída (expedição) */
   concluido_em?: string | null;
+  /** Código de rastreio dos Correios (ex: AA123456789BR) */
+  codigo_rastreio?: string | null;
+  /** Última cidade/UF conhecida via rastreio (denormalizado p/ exibição rápida no card) */
+  ultima_cidade_rastreio?: string | null;
   /** Anotações livres de controle interno */
   anotacoes?: string | null;
   /** Segundos decorridos entre abertura e envio do formulário */
@@ -166,9 +178,6 @@ export type Tela =
   | 'lista-geral'
   | 'lista-alinare'
   | 'lista-novitah'
-  | 'status-geral'
-  | 'status-alinare'
-  | 'status-novitah'
   | 'kanban'
   | 'kanban-edit'
   | 'usuarios';
@@ -183,9 +192,6 @@ export const TELAS: Tela[] = [
   'lista-geral',
   'lista-alinare',
   'lista-novitah',
-  'status-geral',
-  'status-alinare',
-  'status-novitah',
   'kanban',
   'kanban-edit',
   'usuarios',
@@ -201,9 +207,6 @@ export const TELA_LABEL: Record<Tela, string> = {
   'lista-geral': 'Lista Geral',
   'lista-alinare': 'Lista Alinare',
   'lista-novitah': 'Lista Novitah',
-  'status-geral': 'Status Geral',
-  'status-alinare': 'Status Alinare',
-  'status-novitah': 'Status Novitah',
   kanban: 'Kanban',
   'kanban-edit': 'Editar Kanban',
   usuarios: 'Usuários (admin)',
@@ -242,10 +245,23 @@ export interface SolicitacaoHistorico {
   created_at: string; // ISO 8601
 }
 
+/** Último evento de rastreio Correios vinculado a uma solicitação (1:1). */
+export interface RastreamentoCorreios {
+  codigo_rastreio: string;
+  solicitacao_id: string;
+  ultimo_evento_codigo: string | null;
+  ultimo_evento_descricao: string | null;
+  unidade_cidade: string | null;
+  unidade_uf: string | null;
+  eventos: any[] | null;
+  ultimo_check_em: string | null;
+  created_at: string;
+}
+
 /** Mapeamento legado: perfil antigo → telas equivalentes (migração). */
 export const LEGADO_PERFIL_TELAS: Record<string, Tela[]> = {
   ADMIN: [...TELAS],
-  Alinare: ['dashboard-alinare', 'formulario-alinare', 'lista-alinare', 'status-alinare'],
-  Novitah: ['dashboard-novitah', 'formulario-novitah', 'lista-novitah', 'status-novitah'],
-  Expedicao: ['dashboard-geral', 'lista-geral', 'status-geral', 'kanban', 'kanban-edit'],
+  Alinare: ['dashboard-alinare', 'formulario-alinare', 'lista-alinare'],
+  Novitah: ['dashboard-novitah', 'formulario-novitah', 'lista-novitah'],
+  Expedicao: ['dashboard-geral', 'lista-geral', 'kanban', 'kanban-edit'],
 };

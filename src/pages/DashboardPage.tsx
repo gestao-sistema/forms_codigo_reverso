@@ -90,7 +90,7 @@ export default function DashboardPage() {
   const semDados = !loading && dados.length === 0;
 
   return (
-    <div className="space-y-6 max-w-7xl">
+    <div className="space-y-6">
 
       {/* Cabeçalho */}
       <div>

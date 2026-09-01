@@ -94,7 +94,7 @@ export default function ListPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl">
+    <div className="space-y-6">
       {/* Cabeçalho */}
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Lista de Solicitações</h1>
