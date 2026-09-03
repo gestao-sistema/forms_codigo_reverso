@@ -4,6 +4,7 @@ import {
   Clock,
   Tag,
   PackageCheck,
+  Truck,
   CheckCircle2,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -86,6 +87,16 @@ export default function SummaryCards({
       status: 'postado',
     },
     {
+      label: 'Em Trânsito',
+      value: String(kpis.emTransito),
+      hint: 'Mercadoria a caminho',
+      icon: Truck,
+      color: 'text-orange-600',
+      bg: 'bg-orange-50',
+      hex: '#f97316',
+      status: 'em_transito',
+    },
+    {
       label: 'Concluídos',
       value: String(kpis.concluidos),
       hint: 'Expedição finalizou',
@@ -102,7 +113,7 @@ export default function SummaryCards({
     s !== null && activeStatuses !== undefined && activeStatuses.has(s);
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
       {cards.map((card) => {
         const Icon = card.icon;
         const active = isActive(card.status);

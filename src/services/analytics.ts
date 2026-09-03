@@ -28,6 +28,7 @@ export interface Kpis {
   pendentes: number;
   etiquetaGerada: number;
   postados: number;
+  emTransito: number;
   concluidos: number;
   /** Percentual de conclusão (0–100) */
   taxaConclusao: number;
@@ -42,6 +43,7 @@ export function calcularKpis(dados: Solicitacao[]): Kpis {
   const pendentes = dados.filter((s) => s.status === 'pendente').length;
   const etiquetaGerada = dados.filter((s) => s.status === 'etiqueta_gerada').length;
   const postados = dados.filter((s) => s.status === 'postado').length;
+  const emTransito = dados.filter((s) => s.status === 'em_transito').length;
   const concluidos = dados.filter((s) => s.status === 'concluido').length;
 
   const taxaConclusao = total > 0 ? Math.round((concluidos / total) * 100) : 0;
@@ -69,6 +71,7 @@ export function calcularKpis(dados: Solicitacao[]): Kpis {
     pendentes,
     etiquetaGerada,
     postados,
+    emTransito,
     concluidos,
     taxaConclusao,
     tempoMedioSegundos,
