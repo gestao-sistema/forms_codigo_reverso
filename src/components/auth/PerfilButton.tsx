@@ -1,13 +1,18 @@
 // ── Botão de perfil no header (desktop) ─────────────────────────────────────
 // Dropdown: nome, badge Admin, "Alterar senha", "Sair"
+// collapsed=true: versão compacta só ícone
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { ChevronDown, KeyRound, LogOut } from 'lucide-react';
+import { ChevronDown, KeyRound, LogOut, UserCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { isAdmin } from '../../types';
 
-export default function PerfilButton() {
+interface PerfilButtonProps {
+  collapsed?: boolean;
+}
+
+export default function PerfilButton({ collapsed = false }: PerfilButtonProps) {
   const { user, logout, alterarSenha } = useAuth();
   const navigate = useNavigate();
 
@@ -89,19 +94,30 @@ export default function PerfilButton() {
         <button
           type="button"
           onClick={() => setAberto(!aberto)}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+          title={collapsed ? user.nome : undefined}
+          className={`flex items-center rounded-lg hover:bg-slate-100 transition-colors cursor-pointer ${
+            collapsed ? 'justify-center p-2' : 'gap-2 px-3 py-2'
+          }`}
         >
-          <span className="text-sm font-medium text-slate-700">{user.nome}</span>
-          {isAdmin(user) && (
-            <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 text-blue-700">
-              Admin
-            </span>
+          {collapsed ? (
+            <UserCircle className="w-6 h-6 text-slate-500" aria-hidden="true" />
+          ) : (
+            <>
+              <span className="text-sm font-medium text-slate-700">{user.nome}</span>
+              {isAdmin(user) && (
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 text-blue-700">
+                  Admin
+                </span>
+              )}
+              <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${aberto ? 'rotate-180' : ''}`} />
+            </>
           )}
-          <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${aberto ? 'rotate-180' : ''}`} />
         </button>
 
         {aberto && (
-          <div className="absolute right-0 bottom-full mb-1 w-56 bg-white rounded-xl shadow-lg border border-slate-200 py-1 z-50">
+          <div className={`absolute bottom-full mb-1 w-56 bg-white rounded-xl shadow-lg border border-slate-200 py-1 z-50 ${
+            collapsed ? 'left-0' : 'right-0'
+          }`}>
             <div className="px-4 py-2 border-b border-slate-100">
               <p className="text-sm font-semibold text-slate-900 truncate">{user.nome}</p>
               <p className="text-xs text-slate-500 truncate">@{user.usuario}</p>
