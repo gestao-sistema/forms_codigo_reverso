@@ -1,5 +1,5 @@
 // ── Página Dashboard: visão analítica em tempo real ──────────────────────────
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { useSolicitacoes } from '../hooks/useSolicitacoes';
 import {
   calcularKpis,
@@ -10,7 +10,7 @@ import {
   porAutorizador,
 } from '../services/analytics';
 import { useAuth } from '../context/AuthContext';
-import { type FiltrosSolicitacoes } from '../types';
+import { type FiltrosSolicitacoes, type StatusSolicitacao } from '../types';
 
 import SummaryCards from '../components/admin/SummaryCards';
 import DashboardFilters, {
@@ -68,6 +68,32 @@ export default function DashboardPage() {
     filtros: filtrosServico,
   });
 
+  // ── Filtro por status (cards clicáveis) ───────────────────────────────────
+  // Set vazio = nenhum filtro, mostra todos
+  const [statusSelecionados, setStatusSelecionados] = useState<Set<StatusSolicitacao>>(new Set());
+
+  const toggleStatus = useCallback((status: StatusSolicitacao) => {
+    setStatusSelecionados((prev) => {
+      const next = new Set(prev);
+      if (next.has(status)) next.delete(status);
+      else next.add(status);
+      return next;
+    });
+  }, []);
+
+  // Dados filtrados: alimenta KPIs e gráficos. Sem seleção = dados completos
+  const dadosFiltrados = useMemo(
+    () =>
+      statusSelecionados.size === 0
+        ? dados
+        : dados.filter((s) => {
+            const resolvidoAntigo = (s as any).resolvido;
+            const statusReal = s.status || (resolvidoAntigo ? 'concluido' : 'pendente');
+            return statusSelecionados.has(statusReal);
+          }),
+    [dados, statusSelecionados]
+  );
+
   // ── Rótulo "atualizado há Xs" (recalcula a cada segundo) ──────────────────
   const [, setTick] = useState(0);
   useEffect(() => {
@@ -80,14 +106,16 @@ export default function DashboardPage() {
     segundosAtras < 5 ? 'Atualizado agora' : `Atualizado há ${segundosAtras}s`;
 
   // ── Datasets derivados (memoizados) ───────────────────────────────────────
+  // KPIs sempre calculados sobre dados completos (números dos cards não mudam)
   const kpis = useMemo(() => calcularKpis(dados), [dados]);
-  const dataMotivo = useMemo(() => porMotivo(dados), [dados]);
-  const dataEmpresa = useMemo(() => porEmpresa(dados), [dados]);
-  const dataTimeline = useMemo(() => porData(dados), [dados]);
-  const dataMotivoEmpresa = useMemo(() => porMotivoEmpresa(dados), [dados]);
-  const dataAutorizador = useMemo(() => porAutorizador(dados), [dados]);
+  // Gráficos usam dados filtrados por status
+  const dataMotivo = useMemo(() => porMotivo(dadosFiltrados), [dadosFiltrados]);
+  const dataEmpresa = useMemo(() => porEmpresa(dadosFiltrados), [dadosFiltrados]);
+  const dataTimeline = useMemo(() => porData(dadosFiltrados), [dadosFiltrados]);
+  const dataMotivoEmpresa = useMemo(() => porMotivoEmpresa(dadosFiltrados), [dadosFiltrados]);
+  const dataAutorizador = useMemo(() => porAutorizador(dadosFiltrados), [dadosFiltrados]);
 
-  const semDados = !loading && dados.length === 0;
+  const semDados = !loading && dadosFiltrados.length === 0;
 
   return (
     <div className="space-y-6">
@@ -111,8 +139,13 @@ export default function DashboardPage() {
         showBuscaCliente={false}
       />
 
-      {/* Cards de KPIs */}
-      <SummaryCards kpis={kpis} loading={loading} />
+      {/* Cards de KPIs — clicáveis para filtrar por status */}
+      <SummaryCards
+        kpis={kpis}
+        loading={loading}
+        activeStatuses={statusSelecionados}
+        onToggle={toggleStatus}
+      />
 
       {/* Linha 1: Motivo + Empresa */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

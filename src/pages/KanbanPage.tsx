@@ -301,7 +301,7 @@ export default function KanbanPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Kanban</h1>
-          <p className="text-sm text-slate-500 mt-1">Arraste os cards para avançar no fluxo (se tiver permissão).</p>
+          <p className="text-sm text-slate-500 mt-1">A movimentação automática dos cards acontece somente da etapa de Etiqueta Gerada em diante tendo o código de rastreio registrado.</p>
         </div>
         {temGeral && (
           <div className="relative sm:min-w-[160px]">
